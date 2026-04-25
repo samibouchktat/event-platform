@@ -1,0 +1,26 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Frontend React / Vite
+event-platform-frontend/node_modules/
+event-platform-frontend/dist/
+event-platform-frontend/.env
+event-platform-frontend/.env.local
+event-platform-frontend/.env.*.local
+
+# Backend Spring Boot
+event-platform-backend/target/
+event-platform-backend/logs/
+event-platform-backend/*.log
+event-platform-backend/.env
+
+# Secrets
+*.env
+.env
+.env.local
+application-secret.properties
+application-prod.properties
