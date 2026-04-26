@@ -24,3 +24,29 @@ event-platform-backend/.env
 .env.local
 application-secret.properties
 application-prod.properties
+# Backend
+target/
+*.class
+*.jar
+*.war
+
+# Frontend
+node_modules/
+dist/
+build/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
