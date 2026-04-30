@@ -22,8 +22,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.eventplatform.entity.NotificationType;
+import com.eventplatform.service.NotificationService;
+import java.time.LocalDate;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -36,6 +39,7 @@ public class BookingServiceImpl implements BookingService {
     private final ProviderProfileRepository providerProfileRepository;
     private final UserRepository userRepository;
     private final BookingMapper bookingMapper;
+    private final NotificationService notificationService;
 
     @Override
     public BookingResponse createBookingFromQuoteRequest(
@@ -85,7 +89,14 @@ public class BookingServiceImpl implements BookingService {
                 .build();
 
         Booking savedBooking = bookingRepository.save(booking);
-
+        notificationService.createNotification(
+                savedBooking.getClient(),
+                NotificationType.BOOKING_CREATED,
+                "Réservation créée",
+                "Votre réservation a été créée pour le pack : " + savedBooking.getProviderPack().getName(),
+                "BOOKING",
+                savedBooking.getId()
+        );
         return bookingMapper.toResponse(savedBooking);
     }
 
@@ -126,7 +137,14 @@ public class BookingServiceImpl implements BookingService {
         booking.setProviderNotes(cleanNullable(request.getProviderNotes()));
 
         Booking updatedBooking = bookingRepository.save(booking);
-
+        notificationService.createNotification(
+                updatedBooking.getClient(),
+                NotificationType.BOOKING_STATUS_UPDATED,
+                "Mise à jour de votre réservation",
+                "Le statut de votre réservation a été mis à jour : " + newStatus.name(),
+                "BOOKING",
+                updatedBooking.getId()
+        );
         return bookingMapper.toResponse(updatedBooking);
     }
 
@@ -248,5 +266,52 @@ public class BookingServiceImpl implements BookingService {
         }
 
         return value.trim();
+    }
+
+
+    @Override
+    public BookingResponse markDepositAsPaid(String providerEmail, Long bookingId) {
+        ProviderProfile providerProfile = getProviderProfileForCurrentProvider(providerEmail);
+
+        Booking booking = getBookingForProvider(bookingId, providerProfile);
+
+        if (booking.isDepositPaid()) {
+            throw new ApiException(HttpStatus.CONFLICT, "Deposit is already marked as paid");
+        }
+
+        if (booking.getDepositAmount() == null || booking.getDepositAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Deposit amount is not defined");
+        }
+
+        booking.setDepositPaid(true);
+        booking.setDepositPaidAt(LocalDateTime.now());
+        booking.setStatus(BookingStatus.CONFIRMED);
+
+        Booking updatedBooking = bookingRepository.saveAndFlush(booking);
+
+        notificationService.createNotification(
+                updatedBooking.getClient(),
+                NotificationType.DEPOSIT_PAID,
+                "Acompte confirmé",
+                "Votre acompte de " + updatedBooking.getDepositAmount()
+                        + " MAD a été confirmé pour la réservation : "
+                        + updatedBooking.getProviderPack().getName(),
+                "BOOKING",
+                updatedBooking.getId()
+        );
+        if (updatedBooking.getClient() != null) {
+            notificationService.createNotification(
+                    updatedBooking.getClient(),
+                    NotificationType.DEPOSIT_PAID,
+                    "Acompte confirmé",
+                    "Votre acompte de " + updatedBooking.getDepositAmount()
+                            + " MAD a été confirmé pour la réservation : "
+                            + updatedBooking.getProviderPack().getName(),
+                    "BOOKING",
+                    updatedBooking.getId()
+            );
+        }
+
+        return bookingMapper.toResponse(updatedBooking);
     }
 }

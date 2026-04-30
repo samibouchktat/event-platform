@@ -20,6 +20,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.eventplatform.entity.NotificationType;
+import com.eventplatform.service.NotificationService;
+
 
 import java.util.List;
 
@@ -34,6 +37,7 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
     private final UserRepository userRepository;
     private final QuoteRequestMapper quoteRequestMapper;
 
+    private final NotificationService notificationService;
     @Override
     public QuoteRequestResponse createQuoteRequest(
             QuoteRequestCreateRequest request,
@@ -65,9 +69,18 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
                 .build();
 
         QuoteRequest savedQuoteRequest = quoteRequestRepository.save(quoteRequest);
-
+        notificationService.createNotification(
+                providerPack.getProviderProfile().getUser(),
+                NotificationType.QUOTE_REQUEST_CREATED,
+                "Nouvelle demande de devis",
+                "Vous avez reçu une nouvelle demande de devis pour le pack : " + providerPack.getName(),
+                "QUOTE_REQUEST",
+                savedQuoteRequest.getId()
+        );
         return quoteRequestMapper.toResponse(savedQuoteRequest);
+
     }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -106,7 +119,14 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
         quoteRequest.setProviderResponse(cleanNullable(request.getProviderResponse()));
 
         QuoteRequest updatedQuoteRequest = quoteRequestRepository.save(quoteRequest);
-
+        notificationService.createNotification(
+                updatedQuoteRequest.getClient(),
+                NotificationType.QUOTE_REQUEST_STATUS_UPDATED,
+                "Mise à jour de votre demande de devis",
+                "Le prestataire a mis à jour votre demande de devis. Nouveau statut : " + newStatus.name(),
+                "QUOTE_REQUEST",
+                updatedQuoteRequest.getId()
+        );
         return quoteRequestMapper.toResponse(updatedQuoteRequest);
     }
 

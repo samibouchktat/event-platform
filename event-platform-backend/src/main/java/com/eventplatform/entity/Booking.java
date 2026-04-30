@@ -32,7 +32,16 @@ public class Booking {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "quote_request_id", nullable = false)
     private QuoteRequest quoteRequest;
+/****
+ *
+ *
+ * ****/
+@Column(name = "deposit_paid", nullable = false)
+@Builder.Default
+private boolean depositPaid = false;
 
+    @Column(name = "deposit_paid_at")
+    private LocalDateTime depositPaidAt;
     /**
      * Client connecté optionnel.
      * Si la demande venait d'un visiteur non connecté, client = null.

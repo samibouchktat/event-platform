@@ -64,7 +64,7 @@ function SearchPage() {
   };
 
   return (
-    <main style={{ padding: "2rem" }}>
+    <main className="app-container">
       <section style={{ maxWidth: "960px", margin: "0 auto" }}>
         <h1>Rechercher un prestataire</h1>
         <p>

@@ -71,7 +71,7 @@ function ProviderPacksPage() {
   }
 
   return (
-    <main style={{ padding: "2rem" }}>
+    <main className="app-container">
       <div
         style={{
           display: "flex",

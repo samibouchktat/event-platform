@@ -88,7 +88,7 @@ function ProviderProfilePage() {
 
   if (errorMessage && !profile) {
     return (
-      <main style={{ padding: "2rem" }}>
+      <main className="app-container">
         <h1>Mon profil prestataire</h1>
         <p style={{ color: "red" }}>{errorMessage}</p>
       </main>

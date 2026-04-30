@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getClientQuoteRequests } from "../../services/api/clientQuoteApi";
+import { ROUTES } from "../../constants/routes";
+import StatusBadge from "../../components/common/StatusBadge";
+import { getClientQuoteRequests } from "../../services/api/clientQuoteRequestApi";
+import { getProviderQuoteRequests } from "../../services/api/providerQuoteRequestApi";
 
 function ClientQuoteRequestsPage() {
   const [quoteRequests, setQuoteRequests] = useState([]);
@@ -8,6 +11,9 @@ function ClientQuoteRequestsPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const loadQuoteRequests = async () => {
+    setLoading(true);
+    setErrorMessage("");
+
     try {
       const data = await getClientQuoteRequests();
       setQuoteRequests(data);
@@ -27,87 +33,97 @@ function ClientQuoteRequestsPage() {
     loadQuoteRequests();
   }, []);
 
-  const getStatusLabel = (status) => {
-    const labels = {
-      PENDING: "En attente",
-      IN_DISCUSSION: "En discussion",
-      ACCEPTED: "Acceptée",
-      REJECTED: "Refusée",
-      CANCELLED: "Annulée",
-    };
-
-    return labels[status] || status;
-  };
-
   if (loading) {
-    return <p style={{ padding: "2rem" }}>Chargement de vos demandes...</p>;
+    return <p className="loading-text">Chargement de vos demandes de devis...</p>;
   }
 
   return (
-    <main style={{ padding: "2rem" }}>
-      <h1>Mes demandes de devis</h1>
-      <p>Suivez les demandes envoyées aux prestataires.</p>
+    <main className="app-container">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Mes demandes de devis</h1>
+          <p className="page-subtitle">
+            Suivez vos demandes envoyées aux prestataires et leur évolution.
+          </p>
+        </div>
 
-      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+        <Link className="link-btn link-btn-secondary" to={ROUTES.CLIENT_DASHBOARD}>
+          Retour dashboard
+        </Link>
+      </div>
+
+      {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
 
       {quoteRequests.length === 0 ? (
-        <p>Aucune demande de devis pour le moment.</p>
+        <div className="empty-state">Aucune demande de devis pour le moment.</div>
       ) : (
-        <div style={{ display: "grid", gap: "1rem", marginTop: "1.5rem" }}>
-          {quoteRequests.map((quote) => (
-            <article
-              key={quote.id}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                padding: "1rem",
-              }}
-            >
-              <h2>{quote.packName}</h2>
+        <section className="list-grid">
+          {quoteRequests.map((quoteRequest) => (
+            <article className="card" key={quoteRequest.id}>
+              <div className="page-header" style={{ marginBottom: "1rem" }}>
+                <div>
+                  <h2 className="card-title">{quoteRequest.packName}</h2>
+                  <p className="text-muted" style={{ margin: 0 }}>
+                    {quoteRequest.eventCity} · {quoteRequest.eventDate}
+                  </p>
+                </div>
 
-              <p>
-                <strong>Prestataire :</strong> {quote.providerBusinessName}
-              </p>
+                <StatusBadge type="quote" value={quoteRequest.status} />
+              </div>
 
-              <p>
-                <strong>Type événement :</strong> {quote.packEventType}
-              </p>
+              <div className="info-list">
+                <InfoRow
+                  label="Prestataire"
+                  value={
+                    quoteRequest.providerBusinessName ||
+                    quoteRequest.providerName ||
+                    "Non renseigné"
+                  }
+                />
+                <InfoRow
+                  label="Type événement"
+                  value={quoteRequest.eventType || "Non renseigné"}
+                />
+                <InfoRow
+                  label="Service"
+                  value={quoteRequest.serviceType || "Non renseigné"}
+                />
+                <InfoRow
+                  label="Convives"
+                  value={quoteRequest.guestCount || "Non renseigné"}
+                />
+                <InfoRow
+                  label="Budget"
+                  value={
+                    quoteRequest.estimatedBudget
+                      ? `${quoteRequest.estimatedBudget} MAD`
+                      : "Non défini"
+                  }
+                />
+              </div>
 
-              <p>
-                <strong>Service :</strong> {quote.packServiceType}
-              </p>
-
-              <p>
-                <strong>Date événement :</strong> {quote.eventDate}
-              </p>
-
-              <p>
-                <strong>Ville :</strong> {quote.eventCity}
-              </p>
-
-              <p>
-                <strong>Convives :</strong> {quote.guestCount}
-              </p>
-
-              <p>
-                <strong>Statut :</strong> {getStatusLabel(quote.status)}
-              </p>
-
-              {quote.providerResponse && (
-                <p>
-                  <strong>Réponse prestataire :</strong>{" "}
-                  {quote.providerResponse}
-                </p>
-              )}
-
-              <Link to={`/client/quote-requests/${quote.id}`}>
-                Voir détail
-              </Link>
+              <div className="actions mt-1">
+                <Link
+                  className="link-btn"
+                  to={`/client/quote-requests/${quoteRequest.id}`}
+                >
+                  Voir détail
+                </Link>
+              </div>
             </article>
           ))}
-        </div>
+        </section>
       )}
     </main>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="info-row">
+      <strong>{label}</strong>
+      <span>{value}</span>
+    </div>
   );
 }
 

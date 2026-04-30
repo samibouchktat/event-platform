@@ -7,7 +7,7 @@ import ClientLayout from "../components/layout/ClientLayout";
 import ProviderLayout from "../components/layout/ProviderLayout";
 import AdminLayout from "../components/layout/AdminLayout";
 
-import HomePage from "../pages/public/HomePage";
+
 import SearchPage from "../pages/public/SearchPage";
 import LoginPage from "../pages/auth/LoginPage";
 import RegisterPage from "../pages/auth/RegisterPage";
@@ -34,13 +34,27 @@ import ProviderBookingDetailsPage from "../pages/provider/ProviderBookingDetails
 import ClientQuoteRequestsPage from "../pages/client/ClientQuoteRequestsPage";
 import ClientQuoteRequestDetailsPage from "../pages/client/ClientQuoteRequestDetailsPage";
 
+import ClientBookingsPage from "../pages/client/ClientBookingsPage";
+import ClientBookingDetailsPage from "../pages/client/ClientBookingDetailsPage";
+import ProviderPlanningPage from "../pages/provider/ProviderPlanningPage";
+import NotificationsPage from "../pages/notifications/NotificationsPage";
+
+import AdminProvidersPage from "../pages/admin/AdminProvidersPage";
+import AdminProviderDetailsPage from "../pages/admin/AdminProviderDetailsPage";
+
+import AdminUsersPage from "../pages/admin/AdminUsersPage";
+import AdminUserDetailsPage from "../pages/admin/AdminUserDetailsPage";
+
+import AdminReportsPage from "../pages/admin/AdminReportsPage";
+
+import HomePage from "../pages/HomePage";
 
 function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<PublicLayout />}>
-          <Route path={ROUTES.HOME} element={<HomePage />} />
+          <Route path="/" element={<HomePage />} />
           <Route path={ROUTES.SEARCH} element={<SearchPage />} />
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
           <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
@@ -157,6 +171,50 @@ function AppRoutes() {
                 path={ROUTES.CLIENT_QUOTE_REQUEST_DETAILS}
                 element={<ClientQuoteRequestDetailsPage />}
                 />
+                <Route
+                  path={ROUTES.CLIENT_BOOKINGS}
+                  element={<ClientBookingsPage />}
+                />
+
+                <Route
+                  path={ROUTES.CLIENT_BOOKING_DETAILS}
+                  element={<ClientBookingDetailsPage />}
+                />
+                <Route
+                  path={ROUTES.PROVIDER_PLANNING}
+                  element={<ProviderPlanningPage />}
+                />
+                <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
+                <Route element={<RoleBasedRoute allowedRoles={[ROLES.ADMIN]} />}>
+                  <Route element={<AdminLayout />}>
+                    <Route
+                      path={ROUTES.ADMIN_DASHBOARD}
+                      element={<AdminDashboardPage />}
+                    />
+                  </Route>
+                </Route>
+                <Route
+                path={ROUTES.ADMIN_PROVIDERS}
+                element={<AdminProvidersPage />}
+              />
+
+              <Route
+                path={ROUTES.ADMIN_PROVIDER_DETAILS}
+                element={<AdminProviderDetailsPage />}
+              />
+              <Route
+                path={ROUTES.ADMIN_USERS}
+                element={<AdminUsersPage />}
+              />
+
+              <Route
+                path={ROUTES.ADMIN_USER_DETAILS}
+                element={<AdminUserDetailsPage />}
+              />
+              <Route
+                path={ROUTES.ADMIN_REPORTS}
+                element={<AdminReportsPage />}
+              />
       </Routes>
     </BrowserRouter>
   );

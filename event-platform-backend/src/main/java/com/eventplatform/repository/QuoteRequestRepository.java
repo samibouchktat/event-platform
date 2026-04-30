@@ -29,4 +29,6 @@ public interface QuoteRequestRepository extends JpaRepository<QuoteRequest, Long
             Long id,
             User client
     );
+
+    long countByStatus(QuoteRequestStatus status);
 }

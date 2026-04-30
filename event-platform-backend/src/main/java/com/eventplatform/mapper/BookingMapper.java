@@ -40,6 +40,8 @@ public class BookingMapper {
                 .clientNotes(booking.getClientNotes())
                 .createdAt(booking.getCreatedAt())
                 .updatedAt(booking.getUpdatedAt())
+                .depositPaid(booking.isDepositPaid())
+                .depositPaidAt(booking.getDepositPaidAt())
                 .build();
     }
 }

@@ -58,4 +58,8 @@ public class BookingResponse {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    private boolean depositPaid;
+
+    private LocalDateTime depositPaidAt;
 }

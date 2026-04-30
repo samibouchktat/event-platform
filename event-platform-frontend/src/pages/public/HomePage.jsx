@@ -22,7 +22,7 @@ function HomePage() {
   }, []);
 
   return (
-    <main style={{ padding: "2rem" }}>
+    <main className="app-container">
       <h1>Event Platform Maroc</h1>
       <p>Plateforme de gestion et réservation d’événements.</p>
 

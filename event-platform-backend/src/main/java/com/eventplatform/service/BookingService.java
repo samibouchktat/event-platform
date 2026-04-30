@@ -25,5 +25,7 @@ public interface BookingService {
     );
     List<BookingResponse> getClientBookings(String clientEmail);
 
+    BookingResponse markDepositAsPaid(String providerEmail, Long bookingId);
+
     BookingResponse getClientBookingById(String clientEmail, Long bookingId);
 }

@@ -15,12 +15,21 @@ public class AuthResponse {
 
     private String token;
 
-    @Builder.Default
-    private String tokenType = "Bearer";
+    private String tokenType;
 
     private Long userId;
 
+    private String firstName;
+
+    private String lastName;
+
     private String email;
+
+    private String phone;
+
+    private boolean enabled;
+
+    private boolean providerValidated;
 
     private Set<String> roles;
 }

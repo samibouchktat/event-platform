@@ -3,6 +3,7 @@ package com.eventplatform.controller;
 import com.eventplatform.dto.booking.BookingCreateFromQuoteRequest;
 import com.eventplatform.dto.booking.BookingResponse;
 import com.eventplatform.dto.booking.BookingStatusUpdateRequest;
+import com.eventplatform.exception.ApiException;
 import com.eventplatform.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -99,6 +100,28 @@ public class BookingController {
 
         BookingResponse response = bookingService.getClientBookingById(
                 clientEmail,
+                bookingId
+        );
+
+        return ResponseEntity.ok(response);
+    }
+    @PatchMapping("/api/provider/bookings/{bookingId}/deposit/mark-paid")
+    public ResponseEntity<BookingResponse> markDepositAsPaid(
+            @PathVariable Long bookingId,
+            Authentication authentication
+    ) {
+        if (authentication == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Authentication is required");
+        }
+
+        String providerEmail = authentication.getName();
+
+        System.out.println("CONTROLLER - markDepositAsPaid called");
+        System.out.println("providerEmail = " + providerEmail);
+        System.out.println("bookingId = " + bookingId);
+
+        BookingResponse response = bookingService.markDepositAsPaid(
+                providerEmail,
                 bookingId
         );
 

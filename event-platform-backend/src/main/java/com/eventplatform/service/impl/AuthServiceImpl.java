@@ -7,28 +7,26 @@ import com.eventplatform.dto.auth.RegisterRequest;
 import com.eventplatform.entity.Role;
 import com.eventplatform.entity.RoleName;
 import com.eventplatform.entity.User;
+import com.eventplatform.exception.ApiException;
 import com.eventplatform.repository.RoleRepository;
 import com.eventplatform.repository.UserRepository;
+import com.eventplatform.security.CustomUserDetailsService;
 import com.eventplatform.security.JwtService;
 import com.eventplatform.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.eventplatform.exception.ApiException;
-import org.springframework.http.HttpStatus;
-
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -36,11 +34,11 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
-        String email = normalizeEmail(request.getEmail());
+        String email = request.getEmail().trim().toLowerCase();
 
         if (userRepository.existsByEmail(email)) {
             throw new ApiException(HttpStatus.CONFLICT, "Email already exists");
@@ -49,22 +47,22 @@ public class AuthServiceImpl implements AuthService {
         RoleName roleName = resolveRoleName(request.getRole());
 
         Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Role not found: " + roleName));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Role not found"));
 
         User user = User.builder()
                 .firstName(request.getFirstName().trim())
                 .lastName(request.getLastName().trim())
                 .email(email)
-                .phone(request.getPhone().trim())
+                .phone(request.getPhone() != null ? request.getPhone().trim() : null)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .enabled(true)
-                .providerValidated(false)
+                .providerValidated(roleName != RoleName.ROLE_PROVIDER)
                 .roles(Set.of(role))
                 .build();
 
         User savedUser = userRepository.save(user);
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getEmail());
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(savedUser.getEmail());
         String token = jwtService.generateToken(userDetails);
 
         return buildAuthResponse(savedUser, token);
@@ -72,30 +70,35 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        String email = normalizeEmail(request.getEmail());
-
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        email,
-                        request.getPassword()
-                )
-        );
+        String email = request.getEmail().trim().toLowerCase();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        if (!user.isEnabled()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "User account is disabled");
+        }
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            request.getPassword()
+                    )
+            );
+        } catch (DisabledException exception) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "User account is disabled");
+        }
+
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
         String token = jwtService.generateToken(userDetails);
 
         return buildAuthResponse(user, token);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public CurrentUserResponse getCurrentUser(String email) {
-        String normalizedEmail = normalizeEmail(email);
-
-        User user = userRepository.findByEmail(normalizedEmail)
+        User user = userRepository.findByEmail(email.trim().toLowerCase())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
 
         return CurrentUserResponse.builder()
@@ -104,9 +107,14 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
-                .roles(mapRolesToStrings(user))
                 .enabled(user.isEnabled())
                 .providerValidated(user.isProviderValidated())
+                .roles(
+                        user.getRoles()
+                                .stream()
+                                .map(role -> role.getName().name())
+                                .collect(Collectors.toSet())
+                )
                 .build();
     }
 
@@ -115,29 +123,33 @@ public class AuthServiceImpl implements AuthService {
                 .token(token)
                 .tokenType("Bearer")
                 .userId(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
                 .email(user.getEmail())
-                .roles(mapRolesToStrings(user))
+                .phone(user.getPhone())
+                .enabled(user.isEnabled())
+                .providerValidated(user.isProviderValidated())
+                .roles(
+                        user.getRoles()
+                                .stream()
+                                .map(role -> role.getName().name())
+                                .collect(Collectors.toSet())
+                )
                 .build();
     }
 
-    private Set<String> mapRolesToStrings(User user) {
-        return user.getRoles()
-                .stream()
-                .map(role -> role.getName().name())
-                .collect(Collectors.toSet());
-    }
-
     private RoleName resolveRoleName(String role) {
-        String normalizedRole = role.trim().toUpperCase();
-
-        if (!normalizedRole.equals("CLIENT") && !normalizedRole.equals("PROVIDER")) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid role. Allowed roles: CLIENT, PROVIDER");
+        if (role == null || role.trim().isEmpty()) {
+            return RoleName.ROLE_CLIENT;
         }
 
-        return RoleName.valueOf("ROLE_" + normalizedRole);
-    }
+        String cleanedRole = role.trim().toUpperCase();
 
-    private String normalizeEmail(String email) {
-        return email.trim().toLowerCase();
+        return switch (cleanedRole) {
+            case "CLIENT", "ROLE_CLIENT" -> RoleName.ROLE_CLIENT;
+            case "PROVIDER", "ROLE_PROVIDER" -> RoleName.ROLE_PROVIDER;
+            case "ADMIN", "ROLE_ADMIN" -> RoleName.ROLE_ADMIN;
+            default -> throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid role");
+        };
     }
 }
