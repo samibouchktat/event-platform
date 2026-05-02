@@ -49,10 +49,16 @@ function LoginPage() {
     setErrorMessage("");
 
     try {
-      const loggedUser = await login(formData.email, formData.password);
-      const redirectPath = getRedirectPath(loggedUser);
+const loginResponse = await login({
+  email: formData.email.trim().toLowerCase(),
+  password: formData.password,
+});
 
-      navigate(redirectPath, { replace: true });
+const loggedUser = loginResponse?.user || loginResponse;
+
+const redirectPath = getRedirectPath(loggedUser);
+
+navigate(redirectPath, { replace: true });
     } catch (error) {
       console.error("Login error:", error.response?.data || error);
 

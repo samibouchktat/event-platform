@@ -4,6 +4,7 @@ import com.eventplatform.dto.search.PackSearchResponse;
 import com.eventplatform.entity.ProviderPack;
 import com.eventplatform.entity.ProviderProfile;
 import com.eventplatform.repository.ProviderPackRepository;
+import com.eventplatform.repository.ReviewRepository;
 import com.eventplatform.service.PublicSearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,7 +19,7 @@ import java.util.List;
 public class PublicSearchServiceImpl implements PublicSearchService {
 
     private final ProviderPackRepository providerPackRepository;
-
+    private final ReviewRepository reviewRepository;
     @Override
     public List<PackSearchResponse> searchPacks(
             String city,
@@ -56,10 +57,13 @@ public class PublicSearchServiceImpl implements PublicSearchService {
                 .minGuests(pack.getMinGuests())
                 .maxGuests(pack.getMaxGuests())
                 .city(pack.getCity())
+                .imageUrl(pack.getImageUrl())
                 .serviceArea(pack.getServiceArea())
                 .includedServices(pack.getIncludedServices())
                 .bookingDeadlineDays(pack.getBookingDeadlineDays())
                 .active(pack.isActive())
+                .averageRating(reviewRepository.findAverageRatingByPackId(pack.getId()))
+                .reviewCount(reviewRepository.countVisibleReviewsByPackId(pack.getId()))
                 .providerProfileId(providerProfile.getId())
                 .providerBusinessName(providerProfile.getBusinessName())
                 .providerCity(providerProfile.getCity())

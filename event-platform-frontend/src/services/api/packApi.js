@@ -30,3 +30,19 @@ export const togglePackStatus = async (packId) => {
   );
   return response.data;
 };
+export const uploadProviderPackImage = async (packId, file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await axiosClient.post(
+    `/provider/packs/${packId}/image`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return response.data;
+};

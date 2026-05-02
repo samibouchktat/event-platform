@@ -19,14 +19,16 @@ public class QuoteRequestController {
 
     private final QuoteRequestService quoteRequestService;
 
-    @PostMapping("/api/public/quote-requests")
+    @PostMapping("/api/public/packs/{packId}/quote-requests")
     public ResponseEntity<QuoteRequestResponse> createQuoteRequest(
+            @PathVariable Long packId,
             @Valid @RequestBody QuoteRequestCreateRequest request,
             Authentication authentication
     ) {
         String authenticatedEmail = authentication != null ? authentication.getName() : null;
 
         QuoteRequestResponse response = quoteRequestService.createQuoteRequest(
+                packId,
                 request,
                 authenticatedEmail
         );

@@ -5,21 +5,49 @@ import useAuth from "../../hooks/useAuth";
 function ClientDashboardPage() {
   const { user } = useAuth();
 
+  const fullName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+
   return (
-    <main className="app-container">
-      <div className="page-header">
+    <main className="app-container client-dashboard-page">
+      <section className="client-dashboard-hero">
         <div>
-          <h1 className="page-title">Dashboard client</h1>
+          <span className="page-kicker">Espace client</span>
+
+          <h1 className="page-title">
+            Bonjour{fullName ? `, ${fullName}` : ""}.
+          </h1>
+
           <p className="page-subtitle">
-            Recherchez des prestataires, suivez vos demandes de devis, vos
-            réservations, vos documents et vos notifications.
+            Recherchez des prestataires, suivez vos demandes de devis,
+            vos réservations, vos documents et vos notifications depuis un
+            espace simple.
           </p>
+
+          <div className="client-hero-actions">
+            <Link className="link-btn" to={ROUTES.PUBLIC_PACKS || "/packs"}>
+              Rechercher un pack
+            </Link>
+
+            <Link
+              className="link-btn link-btn-secondary"
+              to={ROUTES.CLIENT_QUOTE_REQUESTS}
+            >
+              Voir mes devis
+            </Link>
+          </div>
         </div>
 
-        <span className="badge badge-success">Client</span>
-      </div>
+        <div className="client-hero-summary">
+          <span className="badge badge-success">Client</span>
 
-      <section className="card-grid card-grid-3">
+          <div className="client-summary-icon">👤</div>
+
+          <strong>{fullName || "Client"}</strong>
+          <span>{user?.email || "Email non disponible"}</span>
+        </div>
+      </section>
+
+      <section className="client-dashboard-grid">
         <DashboardCard
           title="Rechercher un pack"
           description="Trouvez des prestataires validés selon votre ville, budget, service et type d’événement."
@@ -27,6 +55,7 @@ function ClientDashboardPage() {
           to={ROUTES.PUBLIC_PACKS || "/packs"}
           badgeLabel="Recherche"
           badgeClass="badge-info"
+          icon="🔎"
         />
 
         <DashboardCard
@@ -36,6 +65,7 @@ function ClientDashboardPage() {
           to={ROUTES.CLIENT_QUOTE_REQUESTS}
           badgeLabel="Devis"
           badgeClass="badge-warning"
+          icon="📝"
         />
 
         <DashboardCard
@@ -45,6 +75,7 @@ function ClientDashboardPage() {
           to={ROUTES.CLIENT_BOOKINGS}
           badgeLabel="Bookings"
           badgeClass="badge-success"
+          icon="📅"
         />
 
         <DashboardCard
@@ -54,44 +85,60 @@ function ClientDashboardPage() {
           to={ROUTES.NOTIFICATIONS}
           badgeLabel="Alertes"
           badgeClass="badge-warning"
+          icon="🔔"
         />
       </section>
 
-      <section className="card mt-2">
-        <h2 className="card-title">Résumé du compte</h2>
+      <section className="client-dashboard-bottom">
+        <article className="card client-account-card">
+          <div className="client-section-header">
+            <div>
+              <span className="badge badge-info">Compte</span>
+              <h2 className="card-title mt-1">Résumé du compte</h2>
+            </div>
+          </div>
 
-        <div className="info-list">
-          <InfoRow label="Nom" value={`${user?.firstName || ""} ${user?.lastName || ""}`} />
-          <InfoRow label="Email" value={user?.email || "Non disponible"} />
-          <InfoRow label="Type de compte" value="Client" />
-        </div>
-      </section>
+          <div className="info-list">
+            <InfoRow label="Nom" value={fullName || "Non renseigné"} />
+            <InfoRow label="Email" value={user?.email || "Non disponible"} />
+            <InfoRow label="Type de compte" value="Client" />
+          </div>
+        </article>
 
-      <section className="card mt-2">
-        <h2 className="card-title">Parcours recommandé</h2>
+        <article className="card client-steps-card">
+          <div className="client-section-header">
+            <div>
+              <span className="badge badge-success">Parcours</span>
+              <h2 className="card-title mt-1">Parcours recommandé</h2>
+            </div>
+          </div>
 
-        <div className="list-grid">
-          <StepItem
-            number="1"
-            title="Recherchez un pack"
-            text="Utilisez les filtres pour trouver une offre adaptée à votre événement."
-          />
-          <StepItem
-            number="2"
-            title="Envoyez une demande de devis"
-            text="Expliquez votre besoin, la date, la ville et le nombre d’invités."
-          />
-          <StepItem
-            number="3"
-            title="Suivez la réponse"
-            text="Le prestataire peut accepter, refuser ou discuter votre demande."
-          />
-          <StepItem
-            number="4"
-            title="Confirmez la réservation"
-            text="Une fois la réservation créée, suivez l’acompte et les documents."
-          />
-        </div>
+          <div className="client-steps-list">
+            <StepItem
+              number="1"
+              title="Recherchez un pack"
+              text="Utilisez les filtres pour trouver une offre adaptée à votre événement."
+            />
+
+            <StepItem
+              number="2"
+              title="Envoyez une demande de devis"
+              text="Expliquez votre besoin, la date, la ville et le nombre d’invités."
+            />
+
+            <StepItem
+              number="3"
+              title="Suivez la réponse"
+              text="Le prestataire peut accepter, refuser ou discuter votre demande."
+            />
+
+            <StepItem
+              number="4"
+              title="Confirmez la réservation"
+              text="Une fois la réservation créée, suivez l’acompte et les documents."
+            />
+          </div>
+        </article>
       </section>
     </main>
   );
@@ -104,21 +151,23 @@ function DashboardCard({
   to,
   badgeLabel,
   badgeClass,
+  icon,
 }) {
   return (
-    <article className="card">
-      <div className="actions" style={{ justifyContent: "space-between" }}>
-        <h2 className="card-title">{title}</h2>
+    <article className="client-dashboard-card">
+      <div className="client-dashboard-card-top">
+        <div className="client-dashboard-icon">{icon}</div>
         <span className={`badge ${badgeClass}`}>{badgeLabel}</span>
       </div>
 
-      <p className="text-muted">{description}</p>
+      <h2>{title}</h2>
 
-      <div className="actions mt-1">
-        <Link className="link-btn" to={to}>
-          {linkLabel}
-        </Link>
-      </div>
+      <p>{description}</p>
+
+      <Link className="client-dashboard-card-link" to={to}>
+        {linkLabel}
+        <span>→</span>
+      </Link>
     </article>
   );
 }
@@ -134,15 +183,12 @@ function InfoRow({ label, value }) {
 
 function StepItem({ number, title, text }) {
   return (
-    <div className="card-soft">
-      <div className="actions" style={{ alignItems: "flex-start" }}>
-        <span className="badge badge-info">{number}</span>
-        <div>
-          <strong>{title}</strong>
-          <p className="text-muted" style={{ margin: "0.35rem 0 0" }}>
-            {text}
-          </p>
-        </div>
+    <div className="client-step-item">
+      <span className="client-step-number">{number}</span>
+
+      <div>
+        <strong>{title}</strong>
+        <p>{text}</p>
       </div>
     </div>
   );

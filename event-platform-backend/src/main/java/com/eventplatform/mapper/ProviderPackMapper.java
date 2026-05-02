@@ -23,6 +23,7 @@ public class ProviderPackMapper {
                 .serviceArea(cleanNullable(request.getServiceArea()))
                 .includedServices(cleanNullable(request.getIncludedServices()))
                 .excludedServices(cleanNullable(request.getExcludedServices()))
+                .imageUrl(cleanNullable(request.getImageUrl()))
                 .bookingDeadlineDays(request.getBookingDeadlineDays())
                 .active(request.getActive() == null || request.getActive())
                 .build();
@@ -39,6 +40,7 @@ public class ProviderPackMapper {
         pack.setCity(clean(request.getCity()));
         pack.setServiceArea(cleanNullable(request.getServiceArea()));
         pack.setIncludedServices(cleanNullable(request.getIncludedServices()));
+        pack.setImageUrl(cleanNullable(request.getImageUrl()));
         pack.setExcludedServices(cleanNullable(request.getExcludedServices()));
         pack.setBookingDeadlineDays(request.getBookingDeadlineDays());
 
@@ -67,6 +69,7 @@ public class ProviderPackMapper {
                 .excludedServices(pack.getExcludedServices())
                 .bookingDeadlineDays(pack.getBookingDeadlineDays())
                 .active(pack.isActive())
+                .imageUrl(pack.getImageUrl())
                 .createdAt(pack.getCreatedAt())
                 .updatedAt(pack.getUpdatedAt())
                 .build();

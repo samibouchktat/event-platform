@@ -1,194 +1,250 @@
 import { useEffect, useState } from "react";
 import {
   getMyNotifications,
-  getUnreadNotificationsCount,
+
   markAllNotificationsAsRead,
   markNotificationAsRead,
 } from "../../services/api/notificationApi";
-import StatusBadge from "../../components/common/StatusBadge";
 
 function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState(null);
-  const [markingAll, setMarkingAll] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+const loadNotifications = async () => {
+  setLoading(true);
+  setErrorMessage("");
 
-  const loadNotifications = async () => {
-    setErrorMessage("");
+  try {
+    const notificationsData = await getMyNotifications();
 
-    try {
-      const [notificationsData, countData] = await Promise.all([
-        getMyNotifications(),
-        getUnreadNotificationsCount(),
-      ]);
+    const safeNotifications = Array.isArray(notificationsData)
+      ? notificationsData
+      : [];
 
-      setNotifications(notificationsData);
-      setUnreadCount(countData.unreadCount || 0);
-    } catch (error) {
-      console.error("Notifications error:", error.response?.data || error);
+    setNotifications(safeNotifications);
 
-      setErrorMessage(
-        error.response?.data?.message ||
-          "Impossible de charger les notifications."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    const unreadTotal = safeNotifications.filter((notification) => {
+      return notification.read === false || notification.read === null;
+    }).length;
+
+    setUnreadCount(unreadTotal);
+  } catch (error) {
+    console.error("Load notifications error:", error.response?.data || error);
+
+    setErrorMessage(
+      error.response?.data?.message ||
+        "Impossible de charger vos notifications."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     loadNotifications();
   }, []);
 
   const handleMarkAsRead = async (notificationId) => {
-    setUpdatingId(notificationId);
+    setActionLoading(true);
     setErrorMessage("");
-    setSuccessMessage("");
 
     try {
       await markNotificationAsRead(notificationId);
       await loadNotifications();
-      setSuccessMessage("Notification marquée comme lue.");
     } catch (error) {
+      console.error("Mark notification as read error:", error.response?.data || error);
+
       setErrorMessage(
         error.response?.data?.message ||
-          "Impossible de marquer la notification comme lue."
+          "Impossible de marquer cette notification comme lue."
       );
     } finally {
-      setUpdatingId(null);
+      setActionLoading(false);
     }
   };
 
   const handleMarkAllAsRead = async () => {
-    setMarkingAll(true);
+    setActionLoading(true);
     setErrorMessage("");
-    setSuccessMessage("");
 
     try {
       await markAllNotificationsAsRead();
       await loadNotifications();
-      setSuccessMessage("Toutes les notifications ont été marquées comme lues.");
     } catch (error) {
+      console.error("Mark all notifications as read error:", error.response?.data || error);
+
       setErrorMessage(
         error.response?.data?.message ||
           "Impossible de marquer toutes les notifications comme lues."
       );
     } finally {
-      setMarkingAll(false);
+      setActionLoading(false);
     }
   };
 
-  const getTypeLabel = (type) => {
-    const labels = {
-      QUOTE_REQUEST_CREATED: "Demande de devis",
-      QUOTE_REQUEST_STATUS_UPDATED: "Statut devis",
-      BOOKING_CREATED: "Réservation",
-      BOOKING_STATUS_UPDATED: "Statut réservation",
-      GENERAL: "Général",
-    };
-
-    return labels[type] || type;
-  };
-
-  if (loading) {
-    return <p style={{ padding: "2rem" }}>Chargement des notifications...</p>;
-  }
-
   return (
-    <main style={{ padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
-      <h1>Notifications</h1>
+    <main className="app-container notifications-page">
+      <section className="notifications-header">
+        <div>
+          <span className="page-kicker">Centre de notifications</span>
+          <h1 className="page-title">Notifications</h1>
+          <p className="page-subtitle">
+            Suivez les mises à jour importantes liées à vos devis, réservations,
+            acomptes et documents.
+          </p>
+        </div>
 
-      <p>
-        Notifications non lues : <strong>{unreadCount}</strong>
-      </p>
+        <div className="notifications-summary-card">
+          <span className="notifications-summary-label">Non lues</span>
+          <strong>{unreadCount}</strong>
+        </div>
+      </section>
 
-      <div style={{ marginBottom: "1.5rem" }}>
+      <section className="notifications-toolbar">
+        <div>
+          <h2 className="card-title">Activité récente</h2>
+          <p className="text-muted">
+            {notifications.length} notification
+            {notifications.length > 1 ? "s" : ""} au total.
+          </p>
+        </div>
+
         <button
           type="button"
+          className="btn btn-secondary"
           onClick={handleMarkAllAsRead}
-          disabled={markingAll || unreadCount === 0}
+          disabled={actionLoading || unreadCount === 0}
         >
-          {markingAll ? "Mise à jour..." : "Tout marquer comme lu"}
+          Tout marquer comme lu
         </button>
-      </div>
+      </section>
 
-      {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
-      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+      {errorMessage && (
+        <div className="alert alert-danger">{errorMessage}</div>
+      )}
 
-      {notifications.length === 0 ? (
-        <p>Aucune notification pour le moment.</p>
-      ) : (
-        <div style={{ display: "grid", gap: "1rem" }}>
-          {notifications.map((notification) => (
-            <article
-              key={notification.id}
-              style={{
-                border: notification.read
-                  ? "1px solid #ddd"
-                  : "2px solid #333",
-                borderRadius: "8px",
-                padding: "1rem",
-                backgroundColor: notification.read ? "#fff" : "#f8f8f8",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: "1rem",
-                  alignItems: "start",
-                }}
-              >
-                <div>
-                  <h2>{notification.title}</h2>
-                  <StatusBadge type="notification" value={notification.read} />
-
-                  <p>
-                    <strong>Type :</strong> {getTypeLabel(notification.type)}
-                  </p>
-
-                  <p>{notification.message}</p>
-
-                  <p>
-                    <strong>Statut :</strong>{" "}
-                    {notification.read ? "Lue" : "Non lue"}
-                  </p>
-
-                  <p>
-                    <strong>Date :</strong>{" "}
-                    {new Date(notification.createdAt).toLocaleString()}
-                  </p>
-
-                  {notification.relatedResourceType && (
-                    <p>
-                      <strong>Ressource :</strong>{" "}
-                      {notification.relatedResourceType} #
-                      {notification.relatedResourceId}
-                    </p>
-                  )}
-                </div>
-
-                {!notification.read && (
-                  <button
-                    type="button"
-                    onClick={() => handleMarkAsRead(notification.id)}
-                    disabled={updatingId === notification.id}
-                  >
-                    {updatingId === notification.id
-                      ? "Mise à jour..."
-                      : "Marquer comme lue"}
-                  </button>
-                )}
-              </div>
-            </article>
-          ))}
+      {loading ? (
+        <p className="loading-text">Chargement des notifications...</p>
+      ) : notifications.length === 0 ? (
+        <div className="empty-state">
+          Aucune notification pour le moment.
         </div>
+      ) : (
+        <section className="notification-list">
+          {notifications.map((notification) => {
+            const isRead = Boolean(notification.read);
+
+            return (
+              <article
+                key={notification.id}
+                className={`notification-card ${
+                  isRead ? "notification-card-read" : "notification-card-unread"
+                }`}
+              >
+                <div className="notification-card-main">
+                  <div className="notification-card-header">
+                    <div>
+                      <span
+                        className={`notification-status-badge ${
+                          isRead
+                            ? "notification-status-read"
+                            : "notification-status-unread"
+                        }`}
+                      >
+                        {isRead ? "Lue" : "Non lue"}
+                      </span>
+
+                      <h3>{notification.title || "Notification"}</h3>
+                    </div>
+
+                    {!isRead && (
+                      <button
+                        type="button"
+                        className="btn btn-small btn-secondary"
+                        onClick={() => handleMarkAsRead(notification.id)}
+                        disabled={actionLoading}
+                      >
+                        Marquer comme lue
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="notification-message">
+                    {notification.message || "Aucun message."}
+                  </p>
+
+                  <div className="notification-meta-grid">
+                    <InfoItem
+                      label="Type"
+                      value={formatNotificationType(notification.type)}
+                    />
+                    <InfoItem
+                      label="Statut"
+                      value={isRead ? "Lue" : "Non lue"}
+                    />
+                    <InfoItem
+                      label="Date"
+                      value={formatDateTime(notification.createdAt)}
+                    />
+                    <InfoItem
+                      label="Ressource"
+                      value={buildResourceLabel(notification)}
+                    />
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </section>
       )}
     </main>
   );
+}
+
+function InfoItem({ label, value }) {
+  return (
+    <div className="notification-meta-item">
+      <span>{label}</span>
+      <strong>{value || "Non renseigné"}</strong>
+    </div>
+  );
+}
+
+function formatNotificationType(type) {
+  if (!type) {
+    return "Notification";
+  }
+
+  return type
+    .toString()
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replace(/^\w/, (letter) => letter.toUpperCase());
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return "Non renseignée";
+  }
+
+  return new Date(value).toLocaleString("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function buildResourceLabel(notification) {
+  if (!notification.resourceType && !notification.resourceId) {
+    return "Non liée";
+  }
+
+  if (notification.resourceType && notification.resourceId) {
+    return `${notification.resourceType} #${notification.resourceId}`;
+  }
+
+  return notification.resourceType || `#${notification.resourceId}`;
 }
 
 export default NotificationsPage;

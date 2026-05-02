@@ -40,11 +40,15 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
     private final NotificationService notificationService;
     @Override
     public QuoteRequestResponse createQuoteRequest(
+            Long packId,
             QuoteRequestCreateRequest request,
             String authenticatedEmail
     ) {
-        ProviderPack providerPack = providerPackRepository.findById(request.getPackId())
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Pack not found"));
+        ProviderPack providerPack = providerPackRepository.findById(packId)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Pack not found"
+                ));
 
         if (!providerPack.isActive()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Pack is inactive");
@@ -64,6 +68,7 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
                 .eventDate(request.getEventDate())
                 .eventCity(clean(request.getEventCity()))
                 .guestCount(request.getGuestCount())
+                .estimatedBudget(request.getEstimatedBudget())
                 .message(cleanNullable(request.getMessage()))
                 .status(QuoteRequestStatus.PENDING)
                 .build();
@@ -119,14 +124,16 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
         quoteRequest.setProviderResponse(cleanNullable(request.getProviderResponse()));
 
         QuoteRequest updatedQuoteRequest = quoteRequestRepository.save(quoteRequest);
-        notificationService.createNotification(
-                updatedQuoteRequest.getClient(),
-                NotificationType.QUOTE_REQUEST_STATUS_UPDATED,
-                "Mise à jour de votre demande de devis",
-                "Le prestataire a mis à jour votre demande de devis. Nouveau statut : " + newStatus.name(),
-                "QUOTE_REQUEST",
-                updatedQuoteRequest.getId()
-        );
+        if (updatedQuoteRequest.getClient() != null) {
+            notificationService.createNotification(
+                    updatedQuoteRequest.getClient(),
+                    NotificationType.QUOTE_REQUEST_STATUS_UPDATED,
+                    "Mise à jour de votre demande de devis",
+                    "Le prestataire a mis à jour votre demande de devis. Nouveau statut : " + newStatus.name(),
+                    "QUOTE_REQUEST",
+                    updatedQuoteRequest.getId()
+            );
+        }
         return quoteRequestMapper.toResponse(updatedQuoteRequest);
     }
 
@@ -212,10 +219,21 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
     }
 
     private void validateGuestCount(ProviderPack providerPack, Integer guestCount) {
-        if (guestCount < providerPack.getMinGuests() || guestCount > providerPack.getMaxGuests()) {
+        if (guestCount == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Guest count is required");
+        }
+
+        if (providerPack.getMinGuests() != null && guestCount < providerPack.getMinGuests()) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
-                    "Guest count is outside pack capacity"
+                    "Guest count is below pack minimum capacity"
+            );
+        }
+
+        if (providerPack.getMaxGuests() != null && guestCount > providerPack.getMaxGuests()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Guest count is above pack maximum capacity"
             );
         }
     }

@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ROUTES } from "../../constants/routes";
-import { createPack, getPackById, updatePack } from "../../services/api/packApi";
+import {
+  createPack,
+  getPackById,
+  updatePack,
+  uploadProviderPackImage,
+} from "../../services/api/packApi";
 
 function ProviderPackFormPage() {
   const navigate = useNavigate();
@@ -23,7 +28,12 @@ function ProviderPackFormPage() {
     excludedServices: "",
     bookingDeadlineDays: 7,
     active: true,
+    imageUrl: "",
   });
+
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
@@ -52,8 +62,11 @@ function ProviderPackFormPage() {
           includedServices: pack.includedServices || "",
           excludedServices: pack.excludedServices || "",
           bookingDeadlineDays: pack.bookingDeadlineDays ?? 7,
-          active: pack.active,
+          active: pack.active ?? true,
+          imageUrl: pack.imageUrl || "",
         });
+
+        setImagePreview(pack.imageUrl || "");
       } catch (error) {
         setErrorMessage(
           error.response?.data?.message || "Impossible de charger le pack."
@@ -73,6 +86,23 @@ function ProviderPackFormPage() {
       ...previous,
       [name]: type === "checkbox" ? checked : value,
     }));
+
+    if (name === "imageUrl") {
+      setImagePreview(value);
+      setSelectedImageFile(null);
+    }
+  };
+
+  const handleImageFileChange = (event) => {
+    const file = event.target.files?.[0];
+
+    setSelectedImageFile(file || null);
+
+    if (file) {
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      setImagePreview(formData.imageUrl || "");
+    }
   };
 
   const buildPayload = () => {
@@ -82,6 +112,7 @@ function ProviderPackFormPage() {
       minGuests: Number(formData.minGuests),
       maxGuests: Number(formData.maxGuests),
       bookingDeadlineDays: Number(formData.bookingDeadlineDays),
+      imageUrl: formData.imageUrl?.trim() || null,
     };
   };
 
@@ -89,16 +120,22 @@ function ProviderPackFormPage() {
     event.preventDefault();
 
     setSaving(true);
+    setUploadingImage(false);
     setErrorMessage("");
     setValidationErrors({});
 
     try {
       const payload = buildPayload();
 
-      if (isEditMode) {
-        await updatePack(packId, payload);
-      } else {
-        await createPack(payload);
+      const savedPack = isEditMode
+        ? await updatePack(packId, payload)
+        : await createPack(payload);
+
+      const savedPackId = savedPack?.id || savedPack?.packId || packId;
+
+      if (selectedImageFile) {
+        setUploadingImage(true);
+        await uploadProviderPackImage(savedPackId, selectedImageFile);
       }
 
       navigate(ROUTES.PROVIDER_PACKS);
@@ -109,90 +146,170 @@ function ProviderPackFormPage() {
       setValidationErrors(data?.validationErrors || {});
     } finally {
       setSaving(false);
+      setUploadingImage(false);
     }
   };
 
+  const buildImagePreviewUrl = (url) => {
+    if (!url) {
+      return "";
+    }
+
+    if (url.startsWith("http") || url.startsWith("blob:")) {
+      return url;
+    }
+
+    return `http://localhost:8080${url}`;
+  };
+
   if (initialLoading) {
-    return <p style={{ padding: "2rem" }}>Chargement du pack...</p>;
+    return <p className="loading-text">Chargement du pack...</p>;
   }
 
   return (
-    <main style={{ padding: "2rem", maxWidth: "760px", margin: "0 auto" }}>
-      <h1>{isEditMode ? "Modifier le pack" : "Créer un pack"}</h1>
+    <main className="app-container" style={{ maxWidth: "860px" }}>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">
+            {isEditMode ? "Modifier le pack" : "Créer un pack"}
+          </h1>
+          <p className="page-subtitle">
+            Ajoutez les informations, le prix, les services et une image pour rendre le pack attractif.
+          </p>
+        </div>
+      </div>
 
-      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+      {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Nom du pack *</label>
+      <form className="form card" onSubmit={handleSubmit}>
+        <div className="form-row">
+          <label className="form-label">Nom du pack *</label>
           <input
             name="name"
             value={formData.name}
             onChange={handleChange}
             required
-            style={{ width: "100%", padding: "0.75rem" }}
+            className="form-control"
           />
           {validationErrors.name && (
-            <small style={{ color: "red" }}>{validationErrors.name}</small>
+            <small className="text-danger">{validationErrors.name}</small>
           )}
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Description</label>
+        <div className="form-row">
+          <label className="form-label">Description</label>
           <textarea
             name="description"
             value={formData.description}
             onChange={handleChange}
             rows={4}
-            style={{ width: "100%", padding: "0.75rem" }}
+            className="form-control"
           />
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Type d’événement *</label>
-          <select
-            name="eventType"
-            value={formData.eventType}
-            onChange={handleChange}
-            style={{ width: "100%", padding: "0.75rem" }}
-          >
-            <option value="MARIAGE">Mariage</option>
-            <option value="ANNIVERSAIRE">Anniversaire</option>
-            <option value="BABY_REVEAL">Baby reveal</option>
-            <option value="AQIQA">Aqiqa</option>
-            <option value="SEMINAIRE">Séminaire</option>
-            <option value="CONFERENCE">Conférence</option>
-            <option value="COCKTAIL">Cocktail</option>
-            <option value="ENTREPRISE">Événement entreprise</option>
-            <option value="SUR_MESURE">Sur mesure</option>
-          </select>
-          {validationErrors.eventType && (
-            <small style={{ color: "red" }}>{validationErrors.eventType}</small>
-          )}
+        <div className="card-grid card-grid-2">
+          <div className="form-row">
+            <label className="form-label">Type d’événement *</label>
+            <select
+              name="eventType"
+              value={formData.eventType}
+              onChange={handleChange}
+              className="form-control"
+            >
+              <option value="MARIAGE">Mariage</option>
+              <option value="ANNIVERSAIRE">Anniversaire</option>
+              <option value="BABY_REVEAL">Baby reveal</option>
+              <option value="AQIQA">Aqiqa</option>
+              <option value="SEMINAIRE">Séminaire</option>
+              <option value="CONFERENCE">Conférence</option>
+              <option value="COCKTAIL">Cocktail</option>
+              <option value="ENTREPRISE">Événement entreprise</option>
+              <option value="SUR_MESURE">Sur mesure</option>
+            </select>
+            {validationErrors.eventType && (
+              <small className="text-danger">{validationErrors.eventType}</small>
+            )}
+          </div>
+
+          <div className="form-row">
+            <label className="form-label">Type de service *</label>
+            <select
+              name="serviceType"
+              value={formData.serviceType}
+              onChange={handleChange}
+              className="form-control"
+            >
+              <option value="TRAITEUR">Traiteur</option>
+              <option value="BUFFET">Buffet</option>
+              <option value="COCKTAIL">Cocktail</option>
+              <option value="DECORATION">Décoration</option>
+              <option value="EVENT_PLANNER">Organisation</option>
+              <option value="OTHER">Autre</option>
+            </select>
+            {validationErrors.serviceType && (
+              <small className="text-danger">{validationErrors.serviceType}</small>
+            )}
+          </div>
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Type de service *</label>
-          <select
-            name="serviceType"
-            value={formData.serviceType}
+        <div className="form-row">
+          <label className="form-label" htmlFor="imageUrl">
+            URL image du pack
+          </label>
+
+          <input
+            id="imageUrl"
+            type="url"
+            name="imageUrl"
+            value={formData.imageUrl}
             onChange={handleChange}
-            style={{ width: "100%", padding: "0.75rem" }}
-          >
-            <option value="TRAITEUR">Traiteur</option>
-            <option value="BUFFET">Buffet</option>
-            <option value="COCKTAIL">Cocktail</option>
-            <option value="DECORATION">Décoration</option>
-            <option value="EVENT_PLANNER">Organisation</option>
-            <option value="OTHER">Autre</option>
-          </select>
-          {validationErrors.serviceType && (
-            <small style={{ color: "red" }}>{validationErrors.serviceType}</small>
-          )}
+            className="form-control"
+            placeholder="https://exemple.com/image-pack.jpg"
+          />
+
+          <small className="text-muted">
+            Optionnel : collez une URL publique, ou importez une image depuis votre PC ci-dessous.
+          </small>
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Prix MAD *</label>
+        <div className="form-row">
+          <label className="form-label" htmlFor="packImage">
+            Importer une image depuis mon PC
+          </label>
+
+          <input
+            id="packImage"
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            onChange={handleImageFileChange}
+            className="form-control"
+          />
+
+          <small className="text-muted">
+            Formats acceptés : JPG, PNG, WEBP. Taille max : 5 MB.
+          </small>
+        </div>
+
+        {imagePreview && (
+          <div className="card-soft">
+            <strong>Aperçu image</strong>
+
+            <img
+              src={buildImagePreviewUrl(imagePreview)}
+              alt="Aperçu du pack"
+              style={{
+                width: "100%",
+                maxHeight: "280px",
+                objectFit: "cover",
+                borderRadius: "14px",
+                marginTop: "0.75rem",
+              }}
+            />
+          </div>
+        )}
+
+        <div className="form-row">
+          <label className="form-label">Prix MAD *</label>
           <input
             name="price"
             type="number"
@@ -201,16 +318,16 @@ function ProviderPackFormPage() {
             value={formData.price}
             onChange={handleChange}
             required
-            style={{ width: "100%", padding: "0.75rem" }}
+            className="form-control"
           />
           {validationErrors.price && (
-            <small style={{ color: "red" }}>{validationErrors.price}</small>
+            <small className="text-danger">{validationErrors.price}</small>
           )}
         </div>
 
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <div style={{ marginBottom: "1rem", flex: 1 }}>
-            <label>Convives min *</label>
+        <div className="card-grid card-grid-2">
+          <div className="form-row">
+            <label className="form-label">Convives min *</label>
             <input
               name="minGuests"
               type="number"
@@ -218,17 +335,15 @@ function ProviderPackFormPage() {
               value={formData.minGuests}
               onChange={handleChange}
               required
-              style={{ width: "100%", padding: "0.75rem" }}
+              className="form-control"
             />
             {validationErrors.minGuests && (
-              <small style={{ color: "red" }}>
-                {validationErrors.minGuests}
-              </small>
+              <small className="text-danger">{validationErrors.minGuests}</small>
             )}
           </div>
 
-          <div style={{ marginBottom: "1rem", flex: 1 }}>
-            <label>Convives max *</label>
+          <div className="form-row">
+            <label className="form-label">Convives max *</label>
             <input
               name="maxGuests"
               type="number"
@@ -236,66 +351,64 @@ function ProviderPackFormPage() {
               value={formData.maxGuests}
               onChange={handleChange}
               required
-              style={{ width: "100%", padding: "0.75rem" }}
+              className="form-control"
             />
             {validationErrors.maxGuests && (
-              <small style={{ color: "red" }}>
-                {validationErrors.maxGuests}
-              </small>
+              <small className="text-danger">{validationErrors.maxGuests}</small>
             )}
           </div>
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Ville *</label>
+        <div className="form-row">
+          <label className="form-label">Ville *</label>
           <input
             name="city"
             value={formData.city}
             onChange={handleChange}
             required
-            style={{ width: "100%", padding: "0.75rem" }}
+            className="form-control"
           />
           {validationErrors.city && (
-            <small style={{ color: "red" }}>{validationErrors.city}</small>
+            <small className="text-danger">{validationErrors.city}</small>
           )}
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Zones de service</label>
+        <div className="form-row">
+          <label className="form-label">Zones de service</label>
           <textarea
             name="serviceArea"
             value={formData.serviceArea}
             onChange={handleChange}
             rows={3}
             placeholder="Casablanca, Rabat, Mohammedia..."
-            style={{ width: "100%", padding: "0.75rem" }}
+            className="form-control"
           />
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Services inclus</label>
+        <div className="form-row">
+          <label className="form-label">Services inclus</label>
           <textarea
             name="includedServices"
             value={formData.includedServices}
             onChange={handleChange}
             rows={3}
-            style={{ width: "100%", padding: "0.75rem" }}
+            className="form-control"
           />
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Services exclus</label>
+        <div className="form-row">
+          <label className="form-label">Services exclus</label>
           <textarea
             name="excludedServices"
             value={formData.excludedServices}
             onChange={handleChange}
             rows={3}
-            style={{ width: "100%", padding: "0.75rem" }}
+            className="form-control"
           />
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Délai minimum de réservation en jours *</label>
+        <div className="form-row">
+          <label className="form-label">Délai minimum de réservation en jours *</label>
           <input
             name="bookingDeadlineDays"
             type="number"
@@ -303,16 +416,16 @@ function ProviderPackFormPage() {
             value={formData.bookingDeadlineDays}
             onChange={handleChange}
             required
-            style={{ width: "100%", padding: "0.75rem" }}
+            className="form-control"
           />
           {validationErrors.bookingDeadlineDays && (
-            <small style={{ color: "red" }}>
+            <small className="text-danger">
               {validationErrors.bookingDeadlineDays}
             </small>
           )}
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
+        <div className="form-row">
           <label>
             <input
               name="active"
@@ -324,12 +437,13 @@ function ProviderPackFormPage() {
           </label>
         </div>
 
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <button type="submit" disabled={saving}>
-            {saving ? "Enregistrement..." : "Enregistrer"}
+        <div className="actions">
+          <button className="btn" type="submit" disabled={saving || uploadingImage}>
+            {saving || uploadingImage ? "Enregistrement..." : "Enregistrer"}
           </button>
 
           <button
+            className="btn btn-secondary"
             type="button"
             onClick={() => navigate(ROUTES.PROVIDER_PACKS)}
           >

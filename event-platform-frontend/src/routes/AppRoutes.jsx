@@ -45,9 +45,11 @@ import AdminProviderDetailsPage from "../pages/admin/AdminProviderDetailsPage";
 import AdminUsersPage from "../pages/admin/AdminUsersPage";
 import AdminUserDetailsPage from "../pages/admin/AdminUserDetailsPage";
 
+
 import AdminReportsPage from "../pages/admin/AdminReportsPage";
 
 import HomePage from "../pages/HomePage";
+import PublicPackDetailsPage from "../pages/public/PublicPackDetailsPage";
 
 function AppRoutes() {
   return (
@@ -215,6 +217,9 @@ function AppRoutes() {
                 path={ROUTES.ADMIN_REPORTS}
                 element={<AdminReportsPage />}
               />
+              <Route path={ROUTES.PUBLIC_PACKS} element={<SearchPage />} />
+
+              <Route path={ROUTES.PUBLIC_PACK_DETAILS} element={<PublicPackDetailsPage />} />
       </Routes>
     </BrowserRouter>
   );

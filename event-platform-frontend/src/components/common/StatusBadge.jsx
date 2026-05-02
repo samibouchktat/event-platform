@@ -81,7 +81,7 @@ function getBookingStatusConfig(value) {
     },
     COMPLETED: {
       label: "Terminée",
-      className: "badge-info",
+      className: "badge-success",
     },
   };
 

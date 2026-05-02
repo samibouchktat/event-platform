@@ -10,7 +10,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.List;import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+
 
 @RestController
 @RequestMapping("/api/provider/packs")
@@ -87,6 +94,32 @@ public class ProviderPackController {
         String email = authentication.getName();
 
         ProviderPackResponse response = providerPackService.togglePackStatus(email, packId);
+
+        return ResponseEntity.ok(response);
+    }
+    @PostMapping(
+            value = "/{packId}/image",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ProviderPackResponse> uploadPackImage(
+            @PathVariable Long packId,
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication
+    ) {
+        System.out.println("CONTROLLER - uploadPackImage called");
+        System.out.println("providerEmail = " + authentication.getName());
+        System.out.println("packId = " + packId);
+        System.out.println("fileName = " + file.getOriginalFilename());
+        System.out.println("contentType = " + file.getContentType());
+        System.out.println("size = " + file.getSize());
+
+        String providerEmail = authentication.getName();
+
+        ProviderPackResponse response = providerPackService.uploadPackImage(
+                providerEmail,
+                packId,
+                file
+        );
 
         return ResponseEntity.ok(response);
     }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { searchPacks } from "../../services/api/searchApi";
 import { Link } from "react-router-dom";
+import { searchPacks } from "../../services/api/searchApi";
+import { ROUTES } from "../../constants/routes";
+
 function SearchPage() {
   const [filters, setFilters] = useState({
     city: "",
@@ -21,8 +23,10 @@ function SearchPage() {
 
     try {
       const data = await searchPacks(currentFilters);
-      setPacks(data);
+      setPacks(Array.isArray(data) ? data : []);
     } catch (error) {
+      console.error("Search packs error:", error.response?.data || error);
+
       setErrorMessage(
         error.response?.data?.message || "Impossible de charger les résultats."
       );
@@ -65,197 +69,301 @@ function SearchPage() {
 
   return (
     <main className="app-container">
-      <section style={{ maxWidth: "960px", margin: "0 auto" }}>
-        <h1>Rechercher un prestataire</h1>
-        <p>
-          Trouvez des packs adaptés à votre événement selon la ville, le budget
-          et le nombre de convives.
-        </p>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Trouver un pack</h1>
+          <p className="page-subtitle">
+            Comparez les offres des prestataires validés selon votre ville,
+            budget, service et type d’événement.
+          </p>
+        </div>
 
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            marginTop: "1.5rem",
-            padding: "1rem",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-            display: "grid",
-            gap: "1rem",
-          }}
-        >
-          <div>
-            <label>Ville</label>
-            <input
-              name="city"
-              value={filters.city}
-              onChange={handleChange}
-              placeholder="Casablanca, Rabat..."
-              style={{ width: "100%", padding: "0.75rem" }}
-            />
+        <Link className="link-btn link-btn-secondary" to={ROUTES.HOME || "/"}>
+          Accueil
+        </Link>
+      </div>
+
+      <section className="card">
+        <h2 className="card-title">Recherche rapide</h2>
+
+        <form className="form" onSubmit={handleSubmit}>
+          <div className="card-grid card-grid-3">
+            <div className="form-row">
+              <label className="form-label" htmlFor="city">
+                Ville
+              </label>
+
+              <input
+                id="city"
+                name="city"
+                value={filters.city}
+                onChange={handleChange}
+                placeholder="Casablanca, Rabat..."
+                className="form-control"
+              />
+            </div>
+
+            <div className="form-row">
+              <label className="form-label" htmlFor="eventType">
+                Type d’événement
+              </label>
+
+              <select
+                id="eventType"
+                name="eventType"
+                value={filters.eventType}
+                onChange={handleChange}
+                className="form-control"
+              >
+                <option value="">Tous</option>
+                <option value="MARIAGE">Mariage</option>
+                <option value="ANNIVERSAIRE">Anniversaire</option>
+                <option value="BABY_REVEAL">Baby reveal</option>
+                <option value="AQIQA">Aqiqa</option>
+                <option value="SEMINAIRE">Séminaire</option>
+                <option value="CONFERENCE">Conférence</option>
+                <option value="COCKTAIL">Cocktail</option>
+                <option value="ENTREPRISE">Événement entreprise</option>
+                <option value="SUR_MESURE">Sur mesure</option>
+              </select>
+            </div>
+
+            <div className="form-row">
+              <label className="form-label" htmlFor="serviceType">
+                Type de service
+              </label>
+
+              <select
+                id="serviceType"
+                name="serviceType"
+                value={filters.serviceType}
+                onChange={handleChange}
+                className="form-control"
+              >
+                <option value="">Tous</option>
+                <option value="TRAITEUR">Traiteur</option>
+                <option value="BUFFET">Buffet</option>
+                <option value="COCKTAIL">Cocktail</option>
+                <option value="DECORATION">Décoration</option>
+                <option value="EVENT_PLANNER">Organisation</option>
+                <option value="OTHER">Autre</option>
+              </select>
+            </div>
+
+            <div className="form-row">
+              <label className="form-label" htmlFor="guests">
+                Nombre de convives
+              </label>
+
+              <input
+                id="guests"
+                name="guests"
+                type="number"
+                min="1"
+                value={filters.guests}
+                onChange={handleChange}
+                placeholder="Ex: 100"
+                className="form-control"
+              />
+            </div>
+
+            <div className="form-row">
+              <label className="form-label" htmlFor="maxBudget">
+                Budget max MAD
+              </label>
+
+              <input
+                id="maxBudget"
+                name="maxBudget"
+                type="number"
+                min="1"
+                value={filters.maxBudget}
+                onChange={handleChange}
+                placeholder="Ex: 20000"
+                className="form-control"
+              />
+            </div>
           </div>
 
-          <div>
-            <label>Type d’événement</label>
-            <select
-              name="eventType"
-              value={filters.eventType}
-              onChange={handleChange}
-              style={{ width: "100%", padding: "0.75rem" }}
-            >
-              <option value="">Tous</option>
-              <option value="MARIAGE">Mariage</option>
-              <option value="ANNIVERSAIRE">Anniversaire</option>
-              <option value="BABY_REVEAL">Baby reveal</option>
-              <option value="AQIQA">Aqiqa</option>
-              <option value="SEMINAIRE">Séminaire</option>
-              <option value="CONFERENCE">Conférence</option>
-              <option value="COCKTAIL">Cocktail</option>
-              <option value="ENTREPRISE">Événement entreprise</option>
-              <option value="SUR_MESURE">Sur mesure</option>
-            </select>
-          </div>
-
-          <div>
-            <label>Type de service</label>
-            <select
-              name="serviceType"
-              value={filters.serviceType}
-              onChange={handleChange}
-              style={{ width: "100%", padding: "0.75rem" }}
-            >
-              <option value="">Tous</option>
-              <option value="TRAITEUR">Traiteur</option>
-              <option value="BUFFET">Buffet</option>
-              <option value="COCKTAIL">Cocktail</option>
-              <option value="DECORATION">Décoration</option>
-              <option value="EVENT_PLANNER">Organisation</option>
-              <option value="OTHER">Autre</option>
-            </select>
-          </div>
-
-          <div>
-            <label>Nombre de convives</label>
-            <input
-              name="guests"
-              type="number"
-              min="1"
-              value={filters.guests}
-              onChange={handleChange}
-              placeholder="Ex: 100"
-              style={{ width: "100%", padding: "0.75rem" }}
-            />
-          </div>
-
-          <div>
-            <label>Budget max MAD</label>
-            <input
-              name="maxBudget"
-              type="number"
-              min="1"
-              value={filters.maxBudget}
-              onChange={handleChange}
-              placeholder="Ex: 20000"
-              style={{ width: "100%", padding: "0.75rem" }}
-            />
-          </div>
-
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <button type="submit" disabled={loading}>
+          <div className="actions mt-1">
+            <button className="btn" type="submit" disabled={loading}>
               {loading ? "Recherche..." : "Rechercher"}
             </button>
 
-            <button type="button" onClick={handleReset} disabled={loading}>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={handleReset}
+              disabled={loading}
+            >
               Réinitialiser
             </button>
           </div>
         </form>
+      </section>
 
-        <section style={{ marginTop: "2rem" }}>
-          <h2>Résultats</h2>
+      <section className="mt-2">
+        <div className="page-header">
+          <div>
+            <h2 className="page-title">Résultats</h2>
+            <p className="page-subtitle">
+              {packs.length} pack{packs.length > 1 ? "s" : ""} trouvé
+              {packs.length > 1 ? "s" : ""}.
+            </p>
+          </div>
+        </div>
 
-          {initialLoading && <p>Chargement des packs...</p>}
+        {initialLoading && <p className="loading-text">Chargement des packs...</p>}
 
-          {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+        {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
 
-          {!loading && !errorMessage && packs.length === 0 && (
-            <p>Aucun résultat trouvé.</p>
-          )}
+        {!loading && !errorMessage && packs.length === 0 && (
+          <div className="empty-state">Aucun résultat trouvé.</div>
+        )}
 
-          {packs.length > 0 && (
-            <div style={{ display: "grid", gap: "1rem" }}>
-              {packs.map((pack) => (
-                <article
-                  key={pack.packId}
-                  style={{
-                    border: "1px solid #ddd",
-                    borderRadius: "8px",
-                    padding: "1rem",
-                  }}
-                >
-                  <h3>{pack.packName}</h3>
-
-                  <p>
-                    <strong>Prestataire :</strong>{" "}
-                    {pack.providerBusinessName}
-                  </p>
-
-                  <p>
-                    <strong>Ville :</strong> {pack.city}
-                  </p>
-
-                  <p>
-                    <strong>Type événement :</strong> {pack.eventType}
-                  </p>
-
-                  <p>
-                    <strong>Service :</strong> {pack.serviceType}
-                  </p>
-
-                  <p>
-                    <strong>Prix :</strong> {pack.price} MAD
-                  </p>
-
-                  <p>
-                    <strong>Convives :</strong> {pack.minGuests} -{" "}
-                    {pack.maxGuests}
-                  </p>
-
-                  {pack.serviceArea && (
-                    <p>
-                      <strong>Zones :</strong> {pack.serviceArea}
-                    </p>
-                  )}
-
-                  {pack.description && <p>{pack.description}</p>}
-
-                  {pack.includedServices && (
-                    <p>
-                      <strong>Inclus :</strong> {pack.includedServices}
-                    </p>
-                  )}
-
-                  <p>
-                    <strong>Délai réservation :</strong>{" "}
-                    {pack.bookingDeadlineDays} jour(s)
-                  </p>
-
-                  {!pack.providerValidated && (
-                    <p style={{ color: "orange" }}>
-                      Prestataire en attente de validation admin.
-                    </p>
-                  )}
-                  {pack.description && <p>{pack.description}</p>}
-                      <Link to={`/quote-request/${pack.packId}`}>
-                        Demander un devis
-                        </Link>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
+        {packs.length > 0 && (
+          <div className="market-pack-grid">
+            {packs.map((pack) => (
+              <PackCard key={pack.packId || pack.id} pack={pack} />
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );
+}
+
+function PackCard({ pack }) {
+  const packId = pack.packId || pack.id;
+  const packName = pack.packName || pack.name || "Pack événementiel";
+  const providerName =
+    pack.providerBusinessName || pack.providerName || "Prestataire";
+  const city = pack.city || pack.providerCity || "Ville non renseignée";
+  const price = pack.price ? `${pack.price} MAD` : "Prix sur devis";
+  const eventType = formatEnum(pack.eventType || pack.packEventType);
+  const serviceType = formatEnum(pack.serviceType || pack.packServiceType);
+
+  const rating = pack.averageRating || 0;
+  const reviewCount = pack.reviewCount || 0;
+
+  return (
+    <article className="market-pack-card">
+      <div className="market-pack-image">
+        {pack.imageUrl ? (
+          <img src={buildImageUrl(pack.imageUrl)} alt={packName} />
+        ) : (
+          <div className="market-pack-placeholder">
+            <span>{getInitials(packName)}</span>
+          </div>
+        )}
+
+        <span className="market-pack-price">{price}</span>
+      </div>
+
+      <div className="market-pack-body">
+        <div className="market-pack-top">
+          <span className="badge badge-info">{serviceType}</span>
+          <RatingStars rating={rating} reviewCount={reviewCount} />
+        </div>
+
+        <h3 className="market-pack-title">{packName}</h3>
+
+        <p className="text-muted market-pack-provider">
+          {providerName} · {city}
+        </p>
+
+        <div className="market-pack-meta">
+          <span>{eventType}</span>
+          <span>
+            {pack.minGuests || "?"} - {pack.maxGuests || "?"} convives
+          </span>
+        </div>
+
+        {pack.description && (
+          <p className="market-pack-description">{pack.description}</p>
+        )}
+
+        {pack.includedServices && (
+          <p className="market-pack-description">
+            <strong>Inclus :</strong> {pack.includedServices}
+          </p>
+        )}
+
+      <div className="actions mt-1">
+          <Link className="link-btn" to={`/packs/${packId}`}>
+            Voir le pack
+          </Link>
+
+          <Link className="link-btn link-btn-secondary" to={`/quote-request/${packId}`}>
+            Demander un devis
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function RatingStars({ rating, reviewCount }) {
+  if (!reviewCount || reviewCount === 0) {
+    return (
+      <div className="rating-stars rating-stars-empty">
+        <span>☆☆☆☆☆</span>
+        <small>Aucun avis</small>
+      </div>
+    );
+  }
+
+  const roundedRating = Number(rating || 0).toFixed(1);
+
+  return (
+    <div className="rating-stars" title={`${roundedRating}/5`}>
+      <span>{buildStars(rating)}</span>
+      <small>
+        {roundedRating} ({reviewCount})
+      </small>
+    </div>
+  );
+}
+
+function buildStars(rating) {
+  const rounded = Math.round(Number(rating || 0));
+  const fullStars = "★".repeat(rounded);
+  const emptyStars = "☆".repeat(5 - rounded);
+
+  return `${fullStars}${emptyStars}`;
+}
+
+function buildImageUrl(imageUrl) {
+  if (!imageUrl) {
+    return "";
+  }
+
+  if (imageUrl.startsWith("http") || imageUrl.startsWith("blob:")) {
+    return imageUrl;
+  }
+
+  return `http://localhost:8080${imageUrl}`;
+}
+
+function formatEnum(value) {
+  if (!value) {
+    return "Non renseigné";
+  }
+
+  return value
+    .toString()
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replace(/^\w/, (letter) => letter.toUpperCase());
+}
+
+function getInitials(text) {
+  return text
+    .split(" ")
+    .slice(0, 2)
+    .map((word) => word.charAt(0))
+    .join("")
+    .toUpperCase();
 }
 
 export default SearchPage;

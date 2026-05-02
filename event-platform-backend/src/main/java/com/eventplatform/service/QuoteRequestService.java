@@ -8,7 +8,10 @@ import java.util.List;
 
 public interface QuoteRequestService {
 
-    QuoteRequestResponse createQuoteRequest(QuoteRequestCreateRequest request, String authenticatedEmail);
+    QuoteRequestResponse createQuoteRequest(
+            Long packId, QuoteRequestCreateRequest request,
+            String authenticatedEmail
+    );
 
     List<QuoteRequestResponse> getReceivedQuoteRequests(String providerEmail);
 

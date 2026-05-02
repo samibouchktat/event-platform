@@ -4,6 +4,7 @@ import { ROUTES } from "../../constants/routes";
 import StatusBadge from "../../components/common/StatusBadge";
 import { getClientBookingById } from "../../services/api/clientBookingApi";
 import { getClientBookingDocuments } from "../../services/api/bookingDocumentApi";
+import { createBookingReview } from "../../services/api/reviewApi";
 
 const DOCUMENT_TYPES = [
   { value: "CONTRACT", label: "Contrat" },
@@ -25,6 +26,52 @@ function ClientBookingDetailsPage() {
 
   const [errorMessage, setErrorMessage] = useState("");
   const [documentsErrorMessage, setDocumentsErrorMessage] = useState("");
+  const [reviewForm, setReviewForm] = useState({
+  rating: 5,
+  comment: "",
+});
+
+const [sendingReview, setSendingReview] = useState(false);
+const [reviewSuccessMessage, setReviewSuccessMessage] = useState("");
+const [reviewErrorMessage, setReviewErrorMessage] = useState("");
+const handleReviewChange = (event) => {
+  const { name, value } = event.target;
+
+  setReviewForm((current) => ({
+    ...current,
+    [name]: name === "rating" ? Number(value) : value,
+  }));
+};
+
+const handleSubmitReview = async (event) => {
+  event.preventDefault();
+
+  setSendingReview(true);
+  setReviewSuccessMessage("");
+  setReviewErrorMessage("");
+
+  try {
+    await createBookingReview(bookingId, {
+      rating: reviewForm.rating,
+      comment: reviewForm.comment.trim() || null,
+    });
+
+    setReviewSuccessMessage("Merci ! Votre avis a été envoyé avec succès.");
+    setReviewForm({
+      rating: 5,
+      comment: "",
+    });
+  } catch (error) {
+    console.error("Create review error:", error.response?.data || error);
+
+    setReviewErrorMessage(
+      error.response?.data?.message ||
+        "Impossible d’envoyer votre avis. Vérifiez que la réservation est terminée et qu’elle n’a pas déjà été notée."
+    );
+  } finally {
+    setSendingReview(false);
+  }
+};
 
   const loadBooking = async () => {
     setLoading(true);
@@ -200,7 +247,79 @@ function ClientBookingDetailsPage() {
                   Suivez la confirmation de votre acompte par le prestataire.
                 </p>
               </div>
+<section className="card mt-1">
+  <div className="page-header" style={{ marginBottom: "1rem" }}>
+    <div>
+      <h2 className="card-title">Votre avis</h2>
+      <p className="text-muted" style={{ margin: 0 }}>
+        Partagez votre expérience après la fin de la réservation.
+      </p>
+    </div>
 
+    <StatusBadge type="booking" value={booking.status} />
+  </div>
+
+  {booking.status !== "COMPLETED" ? (
+    <div className="alert alert-info">
+      Vous pourrez laisser un avis une fois la réservation terminée.
+    </div>
+  ) : (
+    <>
+      {reviewSuccessMessage && (
+        <div className="alert alert-success">{reviewSuccessMessage}</div>
+      )}
+
+      {reviewErrorMessage && (
+        <div className="alert alert-danger">{reviewErrorMessage}</div>
+      )}
+
+      <form className="form" onSubmit={handleSubmitReview}>
+        <div className="form-row">
+          <label className="form-label" htmlFor="rating">
+            Note
+          </label>
+
+          <select
+            id="rating"
+            name="rating"
+            value={reviewForm.rating}
+            onChange={handleReviewChange}
+            className="form-control"
+          >
+            <option value={5}>★★★★★ — Excellent</option>
+            <option value={4}>★★★★☆ — Très bien</option>
+            <option value={3}>★★★☆☆ — Correct</option>
+            <option value={2}>★★☆☆☆ — Moyen</option>
+            <option value={1}>★☆☆☆☆ — Mauvais</option>
+          </select>
+        </div>
+
+        <div className="form-row">
+          <label className="form-label" htmlFor="comment">
+            Commentaire
+          </label>
+
+          <textarea
+            id="comment"
+            name="comment"
+            value={reviewForm.comment}
+            onChange={handleReviewChange}
+            rows="4"
+            className="form-control"
+            placeholder="Décrivez votre expérience avec ce prestataire..."
+            maxLength={2000}
+          />
+        </div>
+
+        <div className="actions">
+          <button className="btn" type="submit" disabled={sendingReview}>
+            {sendingReview ? "Envoi..." : "Envoyer mon avis"}
+          </button>
+        </div>
+      </form>
+    </>
+  )}
+</section>
               <StatusBadge type="deposit" value={booking.depositPaid} />
             </div>
 

@@ -1,6 +1,7 @@
 package com.eventplatform.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -88,6 +89,8 @@ public class QuoteRequest {
             this.status = QuoteRequestStatus.PENDING;
         }
     }
+    @Column(name = "estimated_budget", precision = 12, scale = 2)
+    private BigDecimal estimatedBudget;
 
     @PreUpdate
     protected void onUpdate() {

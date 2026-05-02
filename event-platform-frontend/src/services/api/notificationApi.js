@@ -20,3 +20,6 @@ export const markNotificationAsRead = async (notificationId) => {
 export const markAllNotificationsAsRead = async () => {
   await axiosClient.patch("/notifications/read-all");
 };
+
+
+

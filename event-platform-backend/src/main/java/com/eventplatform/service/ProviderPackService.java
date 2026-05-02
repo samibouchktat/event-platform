@@ -2,6 +2,7 @@ package com.eventplatform.service;
 
 import com.eventplatform.dto.pack.ProviderPackRequest;
 import com.eventplatform.dto.pack.ProviderPackResponse;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -18,4 +19,6 @@ public interface ProviderPackService {
     void deletePack(String email, Long packId);
 
     ProviderPackResponse togglePackStatus(String email, Long packId);
+
+    ProviderPackResponse uploadPackImage(String providerEmail, Long packId, MultipartFile file);
 }

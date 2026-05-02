@@ -144,6 +144,19 @@ function ProviderPacksPage() {
                 <button type="button" onClick={() => handleDelete(pack.id)}>
                   Supprimer
                 </button>
+                {pack.imageUrl && (
+  <img
+    src={pack.imageUrl}
+    alt={pack.name || pack.packName}
+    style={{
+      width: "100%",
+      height: "180px",
+      objectFit: "cover",
+      borderRadius: "14px",
+      marginBottom: "1rem",
+    }}
+  />
+)}
               </div>
             </article>
           ))}

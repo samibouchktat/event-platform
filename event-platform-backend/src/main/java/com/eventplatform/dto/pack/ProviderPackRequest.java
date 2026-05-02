@@ -57,6 +57,7 @@ public class ProviderPackRequest {
     @NotNull(message = "Booking deadline days is required")
     @Min(value = 0, message = "Booking deadline days must be 0 or greater")
     private Integer bookingDeadlineDays;
-
+    @Size(max = 1000, message = "Image URL must not exceed 1000 characters")
+    private String imageUrl;
     private Boolean active;
 }

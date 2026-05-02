@@ -46,4 +46,7 @@ public class PackSearchResponse {
     private String providerCity;
 
     private boolean providerValidated;
+    private String imageUrl;
+    private Double averageRating;
+    private Long reviewCount;
 }

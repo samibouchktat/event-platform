@@ -16,6 +16,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Set;
+import java.util.UUID;
 
 import java.util.List;
 
@@ -28,7 +36,14 @@ public class ProviderPackServiceImpl implements ProviderPackService {
     private final ProviderProfileRepository providerProfileRepository;
     private final ProviderPackRepository providerPackRepository;
     private final ProviderPackMapper providerPackMapper;
+    private static final String PACK_IMAGE_UPLOAD_DIR = "uploads/pack-images";
+    private static final long MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
+    private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES = Set.of(
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+    );
     @Override
     public ProviderPackResponse createPack(String email, ProviderPackRequest request) {
         ProviderProfile providerProfile = getProviderProfileForCurrentUser(email);
@@ -164,5 +179,105 @@ public class ProviderPackServiceImpl implements ProviderPackService {
                 && providerPackRepository.existsByNameAndProviderProfile(cleanedName, providerProfile)) {
             throw new ApiException(HttpStatus.CONFLICT, "Pack name already exists");
         }
+    }
+    @Override
+    public ProviderPackResponse uploadPackImage(String providerEmail, Long packId, MultipartFile file) {
+        System.out.println("SERVICE - uploadPackImage");
+        System.out.println("providerEmail = " + providerEmail);
+        System.out.println("packId = " + packId);
+        System.out.println("file is null = " + (file == null));
+
+        if (file != null) {
+            System.out.println("fileName = " + file.getOriginalFilename());
+            System.out.println("contentType = " + file.getContentType());
+            System.out.println("size = " + file.getSize());
+        }
+
+        User user = getUserByEmail(providerEmail);
+        ProviderProfile providerProfile = getProviderProfileByUser(user);
+
+        ProviderPack pack = providerPackRepository.findByIdAndProviderProfile(packId, providerProfile)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Provider pack not found"));
+
+        validatePackImage(file);
+
+        try {
+            Path uploadDir = Paths.get(
+                    System.getProperty("user.dir"),
+                    "uploads",
+                    "pack-images"
+            ).toAbsolutePath().normalize();
+
+            Files.createDirectories(uploadDir);
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = getFileExtension(originalFilename);
+
+            String filename = UUID.randomUUID() + extension;
+            Path destination = uploadDir.resolve(filename).normalize();
+
+            Files.copy(
+                    file.getInputStream(),
+                    destination,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            );
+
+            String imageUrl = "/uploads/pack-images/" + filename;
+
+            pack.setImageUrl(imageUrl);
+
+            ProviderPack updatedPack = providerPackRepository.save(pack);
+
+            System.out.println("image uploaded to = " + destination);
+            System.out.println("imageUrl saved = " + imageUrl);
+
+            return providerPackMapper.toResponse(updatedPack);
+
+        } catch (Exception exception) {
+            exception.printStackTrace();
+
+            throw new RuntimeException("UPLOAD_PACK_IMAGE_ERROR: " + exception.getMessage(), exception);
+        }
+    }
+
+    private ProviderProfile getProviderProfileByUser(User user) {
+        return providerProfileRepository.findByUser(user)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Provider profile not found"
+                ));
+    }
+
+    private void validatePackImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Image file is required");
+        }
+
+        if (file.getSize() > MAX_IMAGE_SIZE_BYTES) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Image size must not exceed 5 MB");
+        }
+
+        String contentType = file.getContentType();
+
+        if (contentType == null || !ALLOWED_IMAGE_CONTENT_TYPES.contains(contentType)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Only JPG, PNG and WEBP images are allowed");
+        }
+    }
+
+    private String getFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return ".jpg";
+        }
+
+        String extension = filename.substring(filename.lastIndexOf(".")).toLowerCase();
+
+        if (!extension.equals(".jpg")
+                && !extension.equals(".jpeg")
+                && !extension.equals(".png")
+                && !extension.equals(".webp")) {
+            return ".jpg";
+        }
+
+        return extension;
     }
 }
