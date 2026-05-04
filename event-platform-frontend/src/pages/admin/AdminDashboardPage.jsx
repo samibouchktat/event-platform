@@ -2,6 +2,20 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../constants/routes";
 import { getAdminDashboardStats } from "../../services/api/adminApi";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 function AdminDashboardPage() {
   const [stats, setStats] = useState(null);
@@ -41,7 +55,9 @@ function AdminDashboardPage() {
       </main>
     );
   }
-
+const overviewChartData = buildAdminOverviewChartData(stats);
+const providerChartData = buildProviderChartData(stats);
+const businessChartData = buildBusinessChartData(stats);
   return (
     <main className="app-container admin-dashboard-page">
       <section className="admin-dashboard-hero">
@@ -80,70 +96,108 @@ function AdminDashboardPage() {
 
       {stats && (
         <>
-          <section className="admin-stats-grid">
-            <StatCard
-              label="Utilisateurs"
-              value={stats.totalUsers}
-              icon="👥"
-              tone="dark"
-            />
+<section className="admin-dashboard-charts">
+  <article className="admin-dashboard-chart-card admin-dashboard-chart-card-large">
+    <div className="admin-chart-header">
+      <div>
+        <span className="badge badge-info">Courbe globale</span>
+        <h2 className="card-title mt-1">Vue synthétique</h2>
+        <p className="text-muted">
+          Comparaison des principaux volumes de la plateforme.
+        </p>
+      </div>
+    </div>
 
-            <StatCard
-              label="Clients"
-              value={stats.totalClients}
-              icon="👤"
-              tone="blue"
-            />
+    <div className="admin-dashboard-chart-container">
+      <ResponsiveContainer width="100%" height={320}>
+        <AreaChart data={overviewChartData}>
+          <defs>
+            <linearGradient id="adminOverviewGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#111827" stopOpacity={0.28} />
+              <stop offset="95%" stopColor="#111827" stopOpacity={0.03} />
+            </linearGradient>
+          </defs>
 
-            <StatCard
-              label="Prestataires"
-              value={stats.totalProviders}
-              icon="🏢"
-              tone="orange"
-            />
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="label" />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="#111827"
+            fill="url(#adminOverviewGradient)"
+            strokeWidth={3}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  </article>
 
-            <StatCard
-              label="Prestataires validés"
-              value={stats.validatedProviders}
-              icon="✅"
-              tone="green"
-            />
+  <article className="admin-dashboard-chart-card">
+    <div className="admin-chart-header">
+      <div>
+        <span className="badge badge-warning">Prestataires</span>
+        <h2 className="card-title mt-1">Validation prestataires</h2>
+        <p className="text-muted">
+          Répartition entre prestataires validés et en attente.
+        </p>
+      </div>
+    </div>
 
-            <StatCard
-              label="Prestataires en attente"
-              value={stats.pendingProviders}
-              icon="⏳"
-              tone="yellow"
-            />
+    <div className="admin-dashboard-chart-container">
+      <ResponsiveContainer width="100%" height={280}>
+        <PieChart>
+          <Pie
+            data={providerChartData}
+            dataKey="value"
+            nameKey="label"
+            innerRadius={55}
+            outerRadius={90}
+            paddingAngle={4}
+          >
+            {providerChartData.map((entry, index) => (
+              <Cell key={entry.label} fill={getAdminChartColor(index)} />
+            ))}
+          </Pie>
+          <Tooltip />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
 
-            <StatCard
-              label="Packs"
-              value={stats.totalPacks}
-              icon="📦"
-              tone="purple"
-            />
+    <ChartLegend data={providerChartData} />
+  </article>
 
-            <StatCard
-              label="Packs actifs"
-              value={stats.activePacks}
-              icon="🟢"
-              tone="green"
-            />
+  <article className="admin-dashboard-chart-card">
+    <div className="admin-chart-header">
+      <div>
+        <span className="badge badge-success">Activité</span>
+        <h2 className="card-title mt-1">Packs, devis et réservations</h2>
+        <p className="text-muted">
+          Aperçu rapide de l’activité commerciale.
+        </p>
+      </div>
+    </div>
 
-            <StatCard
-              label="Demandes de devis"
-              value={stats.totalQuoteRequests}
-              icon="📝"
-              tone="orange"
-            />
+    <div className="admin-dashboard-chart-container">
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={businessChartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="label" />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Bar dataKey="value" radius={[10, 10, 0, 0]}>
+            {businessChartData.map((entry, index) => (
+              <Cell key={entry.label} fill={getAdminChartColor(index)} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
 
-            <StatCard
-              label="Réservations"
-              value={stats.totalBookings}
-              icon="📅"
-              tone="blue"
-            />
-          </section>
+    <ChartLegend data={businessChartData} />
+  </article>
+</section>
 
           <section className="admin-dashboard-bottom">
             <article className="card admin-quick-actions-card">
@@ -265,5 +319,105 @@ function PriorityItem({ label, value, helper }) {
     </div>
   );
 }
+function ChartLegend({ data }) {
+  return (
+    <div className="admin-dashboard-chart-legend">
+      {data.map((item, index) => (
+        <div className="admin-dashboard-chart-legend-item" key={item.label}>
+          <span style={{ background: getAdminChartColor(index) }} />
+          <strong>{item.label}</strong>
+          <small>{item.value}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
 
+function buildAdminOverviewChartData(stats) {
+  if (!stats) {
+    return [];
+  }
+
+  return [
+    {
+      label: "Utilisateurs",
+      value: Number(stats.totalUsers || 0),
+    },
+    {
+      label: "Clients",
+      value: Number(stats.totalClients || 0),
+    },
+    {
+      label: "Prestataires",
+      value: Number(stats.totalProviders || 0),
+    },
+    {
+      label: "Packs",
+      value: Number(stats.totalPacks || 0),
+    },
+    {
+      label: "Devis",
+      value: Number(stats.totalQuoteRequests || 0),
+    },
+    {
+      label: "Réservations",
+      value: Number(stats.totalBookings || 0),
+    },
+  ];
+}
+
+function buildProviderChartData(stats) {
+  if (!stats) {
+    return [];
+  }
+
+  return [
+    {
+      label: "Validés",
+      value: Number(stats.validatedProviders || 0),
+    },
+    {
+      label: "En attente",
+      value: Number(stats.pendingProviders || 0),
+    },
+  ];
+}
+
+function buildBusinessChartData(stats) {
+  if (!stats) {
+    return [];
+  }
+
+  return [
+    {
+      label: "Packs",
+      value: Number(stats.totalPacks || 0),
+    },
+    {
+      label: "Packs actifs",
+      value: Number(stats.activePacks || 0),
+    },
+    {
+      label: "Devis",
+      value: Number(stats.totalQuoteRequests || 0),
+    },
+    {
+      label: "Réservations",
+      value: Number(stats.totalBookings || 0),
+    },
+  ];
+}
+
+function getAdminChartColor(index) {
+  const colors = [
+    "#111827",
+    "#2563eb",
+    "#16a34a",
+    "#f97316",
+    "#7c3aed",
+    "#dc2626",
+  ];
+
+  return colors[index % colors.length];
+}
 export default AdminDashboardPage;

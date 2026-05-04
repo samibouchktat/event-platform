@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface QuoteRequestRepository extends JpaRepository<QuoteRequest, Long> {
+    long countByProviderProfileId(Long providerProfileId);
+
+    long countByProviderProfileIdAndStatus(Long providerProfileId, QuoteRequestStatus status);
 
     List<QuoteRequest> findByProviderProfileOrderByCreatedAtDesc(ProviderProfile providerProfile);
 

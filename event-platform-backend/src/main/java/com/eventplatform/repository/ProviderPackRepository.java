@@ -12,6 +12,12 @@ import java.util.Optional;
 
 public interface ProviderPackRepository extends JpaRepository<ProviderPack, Long> {
 
+    long countByProviderProfileId(Long providerProfileId);
+
+    long countByProviderProfileIdAndActiveTrue(Long providerProfileId);
+
+    long countByProviderProfileIdAndActiveFalse(Long providerProfileId);
+    
     List<ProviderPack> findByProviderProfileOrderByCreatedAtDesc(
             ProviderProfile providerProfile
     );
@@ -59,4 +65,5 @@ public interface ProviderPackRepository extends JpaRepository<ProviderPack, Long
             @Param("guests") Integer guests,
             @Param("maxBudget") BigDecimal maxBudget
     );
+
 }

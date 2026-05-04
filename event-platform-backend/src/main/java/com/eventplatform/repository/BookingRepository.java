@@ -14,6 +14,9 @@ import java.util.Optional;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     boolean existsByQuoteRequest(QuoteRequest quoteRequest);
+    long countByProviderProfileId(Long providerProfileId);
+
+    long countByProviderProfileIdAndStatus(Long providerProfileId, BookingStatus status);
 
     Optional<Booking> findByQuoteRequest(QuoteRequest quoteRequest);
 

@@ -1,5 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { ROUTES } from "../../constants/routes";
 import { getAdminReportOverview } from "../../services/api/adminApi";
 
@@ -33,143 +47,246 @@ function AdminReportsPage() {
 
   if (loading) {
     return (
-      <main className="admin-container">
-        <p>Chargement du reporting...</p>
+      <main className="app-container admin-reports-page">
+        <section className="admin-dashboard-loading">
+          <div className="admin-loading-spinner" />
+          <p>Chargement du reporting...</p>
+        </section>
       </main>
     );
   }
 
+  const overviewChartData = buildOverviewChartData(report);
+
   return (
-    <main className="admin-container">
-      <div className="admin-page-header">
+    <main className="app-container admin-reports-page">
+      <section className="admin-reports-hero">
         <div>
-          <h1 className="admin-page-title">Reporting</h1>
-          <p className="admin-page-subtitle">
-            Vue synthétique de l’activité de la plateforme.
+          <span className="page-kicker">Reporting admin</span>
+
+          <h1 className="page-title">Reporting</h1>
+
+          <p className="page-subtitle">
+            Analyse synthétique de l’activité de la plateforme : utilisateurs,
+            prestataires, packs, demandes de devis et réservations.
           </p>
+
+          <div className="admin-hero-actions">
+            <button className="btn" type="button" onClick={loadReport}>
+              Rafraîchir
+            </button>
+
+            <Link className="link-btn link-btn-secondary" to={ROUTES.ADMIN_DASHBOARD}>
+              Retour dashboard
+            </Link>
+          </div>
         </div>
 
-        <div className="admin-actions" style={{ marginTop: 0 }}>
-          <button className="admin-btn secondary" type="button" onClick={loadReport}>
-            Rafraîchir
-          </button>
-
-          <Link className="admin-link-btn secondary" to={ROUTES.ADMIN_DASHBOARD}>
-            Retour dashboard
-          </Link>
+        <div className="admin-reports-summary-card">
+          <span className="badge badge-info">Vue globale</span>
+          <strong>{overviewChartData.reduce((sum, item) => sum + item.value, 0)}</strong>
+          <span>éléments suivis</span>
         </div>
-      </div>
+      </section>
 
-      {errorMessage && <div className="admin-message error">{errorMessage}</div>}
+      {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
 
       {!report ? (
-        <div className="admin-empty">Aucune donnée de reporting disponible.</div>
+        <div className="empty-state">Aucune donnée de reporting disponible.</div>
       ) : (
-        <section className="admin-grid cards">
-          <ReportCard
-            title="Utilisateurs par rôle"
-            data={report.usersByRole}
-            labelMapper={getUserRoleLabel}
-          />
+        <>
+          <section className="admin-chart-card admin-chart-card-large">
+            <div className="admin-chart-header">
+              <div>
+                <h2 className="card-title">Vue synthétique de la plateforme</h2>
+                <p className="text-muted">
+                  Comparaison globale des principaux volumes du MVP.
+                </p>
+              </div>
+            </div>
 
-          <ReportCard
-            title="Validation prestataires"
-            data={report.providersByValidation}
-            labelMapper={getProviderValidationLabel}
-          />
+            <div className="admin-chart-container">
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={overviewChartData}>
+                  <defs>
+                    <linearGradient id="overviewGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#111827" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#111827" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
 
-          <ReportCard
-            title="Packs par statut"
-            data={report.packsByStatus}
-            labelMapper={getPackStatusLabel}
-          />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#111827"
+                    fill="url(#overviewGradient)"
+                    strokeWidth={3}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
 
-          <ReportCard
-            title="Demandes de devis par statut"
-            data={report.quoteRequestsByStatus}
-            labelMapper={getQuoteStatusLabel}
-          />
+          <section className="admin-reports-grid">
+            <ChartCard
+              title="Utilisateurs par rôle"
+              type="pie"
+              data={toChartData(report.usersByRole, getUserRoleLabel)}
+            />
 
-          <ReportCard
-            title="Réservations par statut"
-            data={report.bookingsByStatus}
-            labelMapper={getBookingStatusLabel}
-          />
-        </section>
+            <ChartCard
+              title="Validation prestataires"
+              type="bar"
+              data={toChartData(
+                report.providersByValidation,
+                getProviderValidationLabel
+              )}
+            />
+
+            <ChartCard
+              title="Packs par statut"
+              type="bar"
+              data={toChartData(report.packsByStatus, getPackStatusLabel)}
+            />
+
+            <ChartCard
+              title="Demandes de devis par statut"
+              type="bar"
+              data={toChartData(
+                report.quoteRequestsByStatus,
+                getQuoteStatusLabel
+              )}
+            />
+
+            <ChartCard
+              title="Réservations par statut"
+              type="bar"
+              data={toChartData(report.bookingsByStatus, getBookingStatusLabel)}
+            />
+          </section>
+        </>
       )}
     </main>
   );
 }
 
-function ReportCard({ title, data, labelMapper }) {
-  const entries = Object.entries(data || {});
-  const total = entries.reduce((sum, [, value]) => sum + Number(value || 0), 0);
+function ChartCard({ title, data, type }) {
+  const total = data.reduce((sum, item) => sum + Number(item.value || 0), 0);
 
   return (
-    <article className="admin-card">
-      <div style={{ marginBottom: "1rem" }}>
-        <h2 className="admin-card-title">{title}</h2>
-        <p className="admin-stat-label">
-          Total : <strong>{total}</strong>
-        </p>
+    <article className="admin-chart-card">
+      <div className="admin-chart-header">
+        <div>
+          <h2 className="card-title">{title}</h2>
+          <p className="text-muted">
+            Total : <strong>{total}</strong>
+          </p>
+        </div>
       </div>
 
-      {entries.length === 0 ? (
-        <p>Aucune donnée.</p>
+      {data.length === 0 ? (
+        <div className="empty-state">Aucune donnée.</div>
       ) : (
-        <div style={{ display: "grid", gap: "0.9rem" }}>
-          {entries.map(([key, value]) => (
-            <ReportRow
-              key={key}
-              label={labelMapper ? labelMapper(key) : key}
-              value={Number(value || 0)}
-              total={total}
-            />
-          ))}
-        </div>
+        <>
+          <div className="admin-chart-container">
+            <ResponsiveContainer width="100%" height={260}>
+              {type === "pie" ? (
+                <PieChart>
+                  <Pie
+                    data={data}
+                    dataKey="value"
+                    nameKey="label"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={3}
+                  >
+                    {data.map((entry, index) => (
+                      <Cell key={entry.label} fill={getChartColor(index)} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              ) : (
+                <BarChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="value" radius={[10, 10, 0, 0]}>
+                    {data.map((entry, index) => (
+                      <Cell key={entry.label} fill={getChartColor(index)} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+
+          <div className="admin-chart-legend">
+            {data.map((item, index) => (
+              <div className="admin-chart-legend-item" key={item.label}>
+                <span style={{ background: getChartColor(index) }} />
+                <strong>{item.label}</strong>
+                <small>{item.value}</small>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </article>
   );
 }
 
-function ReportRow({ label, value, total }) {
-  const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+function toChartData(data, labelMapper) {
+  return Object.entries(data || {}).map(([key, value]) => ({
+    label: labelMapper ? labelMapper(key) : key,
+    value: Number(value || 0),
+  }));
+}
 
-  return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "1rem",
-          marginBottom: "0.35rem",
-        }}
-      >
-        <span style={{ fontWeight: 700 }}>{label}</span>
-        <span>
-          {value} <strong>({percentage}%)</strong>
-        </span>
-      </div>
+function buildOverviewChartData(report) {
+  if (!report) {
+    return [];
+  }
 
-      <div
-        style={{
-          height: "10px",
-          background: "#e5e7eb",
-          borderRadius: "999px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${percentage}%`,
-            height: "100%",
-            background: "#111827",
-            borderRadius: "999px",
-          }}
-        />
-      </div>
-    </div>
+  const usersTotal = sumValues(report.usersByRole);
+  const providersTotal = sumValues(report.providersByValidation);
+  const packsTotal = sumValues(report.packsByStatus);
+  const quotesTotal = sumValues(report.quoteRequestsByStatus);
+  const bookingsTotal = sumValues(report.bookingsByStatus);
+
+  return [
+    { label: "Utilisateurs", value: usersTotal },
+    { label: "Prestataires", value: providersTotal },
+    { label: "Packs", value: packsTotal },
+    { label: "Devis", value: quotesTotal },
+    { label: "Réservations", value: bookingsTotal },
+  ];
+}
+
+function sumValues(data) {
+  return Object.values(data || {}).reduce(
+    (sum, value) => sum + Number(value || 0),
+    0
   );
+}
+
+function getChartColor(index) {
+  const colors = [
+    "#111827",
+    "#2563eb",
+    "#16a34a",
+    "#f97316",
+    "#7c3aed",
+    "#dc2626",
+    "#0891b2",
+  ];
+
+  return colors[index % colors.length];
 }
 
 function getUserRoleLabel(role) {
@@ -185,7 +302,7 @@ function getUserRoleLabel(role) {
 function getProviderValidationLabel(status) {
   const labels = {
     VALIDATED: "Validés",
-    PENDING_OR_REJECTED: "En attente / non validés",
+    PENDING_OR_REJECTED: "En attente",
   };
 
   return labels[status] || status;
@@ -214,7 +331,7 @@ function getQuoteStatusLabel(status) {
 
 function getBookingStatusLabel(status) {
   const labels = {
-    PENDING_DEPOSIT: "En attente d’acompte",
+    PENDING_DEPOSIT: "Acompte attendu",
     CONFIRMED: "Confirmées",
     CANCELLED: "Annulées",
     COMPLETED: "Terminées",

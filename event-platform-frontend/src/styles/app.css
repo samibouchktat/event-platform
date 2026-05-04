@@ -2687,3 +2687,321 @@ textarea.form-control {
     grid-template-columns: 1fr;
   }
 }
+/* Admin Reports Charts */
+
+.admin-reports-page {
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+.admin-reports-hero {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 1.5rem;
+  padding: 2rem;
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(17, 24, 39, 0.12), transparent 30%),
+    linear-gradient(135deg, #ffffff 0%, #dbeafe 48%, #f8fafc 100%);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.09);
+}
+
+.admin-reports-hero::after {
+  content: "";
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  right: -100px;
+  top: -100px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.admin-reports-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-reports-summary-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.admin-reports-summary-card strong {
+  font-size: 2.6rem;
+  line-height: 1;
+  font-weight: 950;
+  color: #111827;
+}
+
+.admin-reports-summary-card span:last-child {
+  color: #6b7280;
+  font-weight: 750;
+}
+
+.admin-reports-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-chart-card {
+  padding: 1.5rem;
+  border-radius: 26px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.admin-chart-card-large {
+  margin-bottom: 1rem;
+}
+
+.admin-chart-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-chart-container {
+  width: 100%;
+  min-height: 260px;
+}
+
+.admin-chart-legend {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.admin-chart-legend-item {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 14px;
+  background: #f9fafb;
+  border: 1px solid #eef2f7;
+}
+
+.admin-chart-legend-item span {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.admin-chart-legend-item strong {
+  color: #111827;
+  font-size: 0.9rem;
+}
+
+.admin-chart-legend-item small {
+  color: #6b7280;
+  font-weight: 900;
+}
+
+@media (max-width: 1000px) {
+  .admin-reports-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-reports-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-reports-page {
+    padding-top: 1rem;
+  }
+
+  .admin-reports-hero {
+    padding: 1.25rem;
+    border-radius: 24px;
+  }
+
+  .admin-chart-card {
+    padding: 1rem;
+    border-radius: 22px;
+  }
+}
+/* Admin Dashboard Charts */
+
+.admin-dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-dashboard-chart-card {
+  padding: 1.5rem;
+  border-radius: 26px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.admin-dashboard-chart-card-large {
+  grid-column: 1 / -1;
+}
+
+.admin-chart-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-dashboard-chart-container {
+  width: 100%;
+  min-height: 260px;
+}
+
+.admin-dashboard-chart-legend {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.admin-dashboard-chart-legend-item {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 14px;
+  background: #f9fafb;
+  border: 1px solid #eef2f7;
+}
+
+.admin-dashboard-chart-legend-item span {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.admin-dashboard-chart-legend-item strong {
+  color: #111827;
+  font-size: 0.9rem;
+}
+
+.admin-dashboard-chart-legend-item small {
+  color: #6b7280;
+  font-weight: 900;
+}
+
+@media (max-width: 1000px) {
+  .admin-dashboard-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-dashboard-chart-card {
+    padding: 1rem;
+    border-radius: 22px;
+  }
+
+  .admin-dashboard-chart-container {
+    overflow-x: auto;
+  }
+}
+/* Provider Dashboard Charts */
+
+.provider-dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.provider-chart-card {
+  padding: 1.5rem;
+  border-radius: 26px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.provider-chart-card-large {
+  grid-column: 1 / -1;
+}
+
+.provider-chart-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.provider-chart-container {
+  width: 100%;
+  min-height: 260px;
+}
+
+.provider-chart-legend {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.provider-chart-legend-item {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 14px;
+  background: #f9fafb;
+  border: 1px solid #eef2f7;
+}
+
+.provider-chart-legend-item span {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.provider-chart-legend-item strong {
+  color: #111827;
+  font-size: 0.9rem;
+}
+
+.provider-chart-legend-item small {
+  color: #6b7280;
+  font-weight: 900;
+}
+
+@media (max-width: 1000px) {
+  .provider-dashboard-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .provider-chart-card {
+    padding: 1rem;
+    border-radius: 22px;
+  }
+
+  .provider-chart-container {
+    overflow-x: auto;
+  }
+}
