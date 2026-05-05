@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.eventplatform.entity.NotificationType;
 import com.eventplatform.service.NotificationService;
+import java.time.LocalDate;
 
 
 import java.util.List;
@@ -38,6 +39,7 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
     private final QuoteRequestMapper quoteRequestMapper;
 
     private final NotificationService notificationService;
+
     @Override
     public QuoteRequestResponse createQuoteRequest(
             Long packId,
@@ -54,16 +56,18 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Pack is inactive");
         }
 
+        validateProviderIsPubliclyAvailable(providerPack);
+        validateEventDate(request.getEventDate());
         validateGuestCount(providerPack, request.getGuestCount());
 
-        User client = resolveOptionalClient(authenticatedEmail);
+        User client = resolveRequiredClientForQuoteRequest(authenticatedEmail);
 
         QuoteRequest quoteRequest = QuoteRequest.builder()
                 .client(client)
                 .providerPack(providerPack)
                 .providerProfile(providerPack.getProviderProfile())
                 .customerName(clean(request.getCustomerName()))
-                .customerEmail(cleanLower(request.getCustomerEmail()))
+                .customerEmail(client.getEmail())
                 .customerPhone(clean(request.getCustomerPhone()))
                 .eventDate(request.getEventDate())
                 .eventCity(clean(request.getEventCity()))
@@ -74,6 +78,7 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
                 .build();
 
         QuoteRequest savedQuoteRequest = quoteRequestRepository.save(quoteRequest);
+
         notificationService.createNotification(
                 providerPack.getProviderProfile().getUser(),
                 NotificationType.QUOTE_REQUEST_CREATED,
@@ -82,8 +87,8 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
                 "QUOTE_REQUEST",
                 savedQuoteRequest.getId()
         );
-        return quoteRequestMapper.toResponse(savedQuoteRequest);
 
+        return quoteRequestMapper.toResponse(savedQuoteRequest);
     }
 
 
@@ -142,7 +147,11 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
     public List<QuoteRequestResponse> getClientQuoteRequests(String clientEmail) {
         User client = getClientUserByEmail(clientEmail);
 
-        return quoteRequestRepository.findByClientOrderByCreatedAtDesc(client)
+        return quoteRequestRepository
+                .findByClientOrCustomerEmailIgnoreCaseOrderByCreatedAtDesc(
+                        client,
+                        client.getEmail()
+                )
                 .stream()
                 .map(quoteRequestMapper::toResponse)
                 .toList();
@@ -150,11 +159,24 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
 
     @Override
     @Transactional(readOnly = true)
-    public QuoteRequestResponse getClientQuoteRequestById(String clientEmail, Long quoteRequestId) {
+    public QuoteRequestResponse getClientQuoteRequestById(
+            String clientEmail,
+            Long quoteRequestId
+    ) {
         User client = getClientUserByEmail(clientEmail);
 
-        QuoteRequest quoteRequest = quoteRequestRepository.findByIdAndClient(quoteRequestId, client)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Quote request not found"));
+        QuoteRequest quoteRequest =
+                quoteRequestRepository
+                        .findByIdAndClientOrIdAndCustomerEmailIgnoreCase(
+                                quoteRequestId,
+                                client,
+                                quoteRequestId,
+                                client.getEmail()
+                        )
+                        .orElseThrow(() -> new ApiException(
+                                HttpStatus.NOT_FOUND,
+                                "Quote request not found"
+                        ));
 
         return quoteRequestMapper.toResponse(quoteRequest);
     }
@@ -209,13 +231,26 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
         }
     }
 
-    private User resolveOptionalClient(String authenticatedEmail) {
+    private User resolveOptionalClientForQuoteRequest(String authenticatedEmail) {
         if (authenticatedEmail == null || authenticatedEmail.trim().isEmpty()) {
             return null;
         }
 
-        return userRepository.findByEmail(authenticatedEmail.trim().toLowerCase())
-                .orElse(null);
+        User user = userRepository.findByEmail(authenticatedEmail.trim().toLowerCase())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Authenticated user not found"));
+
+        boolean isClient = user.getRoles()
+                .stream()
+                .anyMatch(role -> role.getName() == RoleName.ROLE_CLIENT);
+
+        if (!isClient) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "Only clients can create quote requests"
+            );
+        }
+
+        return user;
     }
 
     private void validateGuestCount(ProviderPack providerPack, Integer guestCount) {
@@ -261,4 +296,62 @@ public class QuoteRequestServiceImpl implements QuoteRequestService {
 
         return value.trim();
     }
+    private void validateProviderIsPubliclyAvailable(ProviderPack providerPack) {
+        if (providerPack.getProviderProfile() == null ||
+                providerPack.getProviderProfile().getUser() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Pack provider is invalid");
+        }
+
+        User providerUser = providerPack.getProviderProfile().getUser();
+
+        if (!providerUser.isEnabled()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Pack provider account is disabled");
+        }
+
+        if (!providerUser.isProviderValidated()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Pack provider is not validated");
+        }
+    }
+
+    private void validateEventDate(LocalDate eventDate) {
+        if (eventDate == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Event date is required");
+        }
+
+        if (!eventDate.isAfter(LocalDate.now())) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Event date must be in the future"
+            );
+        }
+
+    }
+    private User resolveRequiredClientForQuoteRequest(String authenticatedEmail) {
+        if (authenticatedEmail == null || authenticatedEmail.trim().isEmpty()) {
+            throw new ApiException(
+                    HttpStatus.UNAUTHORIZED,
+                    "You must be logged in as a client to create a quote request"
+            );
+        }
+
+        User user = userRepository.findByEmail(authenticatedEmail.trim().toLowerCase())
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Authenticated user not found"
+                ));
+
+        boolean isClient = user.getRoles()
+                .stream()
+                .anyMatch(role -> role.getName() == RoleName.ROLE_CLIENT);
+
+        if (!isClient) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "Only clients can create quote requests"
+            );
+        }
+
+        return user;
+    }
+    
 }

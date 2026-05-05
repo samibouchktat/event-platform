@@ -34,4 +34,5 @@ export const ROUTES = {
   ADMIN_USER_DETAILS: "/admin/users/:userId",
   ADMIN_REPORTS: "/admin/reports",
   PUBLIC_PACK_DETAILS: "/packs/:packId",
+  OAUTH2_SUCCESS: "/oauth2/success",
 };

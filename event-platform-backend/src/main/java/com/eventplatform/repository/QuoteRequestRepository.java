@@ -10,28 +10,36 @@ import java.util.List;
 import java.util.Optional;
 
 public interface QuoteRequestRepository extends JpaRepository<QuoteRequest, Long> {
-    long countByProviderProfileId(Long providerProfileId);
 
-    long countByProviderProfileIdAndStatus(Long providerProfileId, QuoteRequestStatus status);
+    List<QuoteRequest> findByClientOrderByCreatedAtDesc(User client);
 
-    List<QuoteRequest> findByProviderProfileOrderByCreatedAtDesc(ProviderProfile providerProfile);
-
-    List<QuoteRequest> findByProviderProfileAndStatusOrderByCreatedAtDesc(
-            ProviderProfile providerProfile,
-            QuoteRequestStatus status
+    List<QuoteRequest> findByClientOrCustomerEmailIgnoreCaseOrderByCreatedAtDesc(
+            User client,
+            String customerEmail
     );
+
+    List<QuoteRequest> findByProviderProfileOrderByCreatedAtDesc(
+            ProviderProfile providerProfile
+    );
+    long countByStatus(QuoteRequestStatus status);
+
+    Optional<QuoteRequest> findByIdAndClient(Long id, User client);
 
     Optional<QuoteRequest> findByIdAndProviderProfile(
             Long id,
             ProviderProfile providerProfile
     );
 
-    List<QuoteRequest> findByClientOrderByCreatedAtDesc(User client);
+    long countByProviderProfileId(Long providerProfileId);
 
-    Optional<QuoteRequest> findByIdAndClient(
-            Long id,
-            User client
+    long countByProviderProfileIdAndStatus(
+            Long providerProfileId,
+            QuoteRequestStatus status
     );
-
-    long countByStatus(QuoteRequestStatus status);
+    Optional<QuoteRequest> findByIdAndClientOrIdAndCustomerEmailIgnoreCase(
+            Long id1,
+            User client,
+            Long id2,
+            String customerEmail
+    );
 }

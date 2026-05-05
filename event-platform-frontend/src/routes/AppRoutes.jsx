@@ -51,6 +51,9 @@ import AdminReportsPage from "../pages/admin/AdminReportsPage";
 import HomePage from "../pages/HomePage";
 import PublicPackDetailsPage from "../pages/public/PublicPackDetailsPage";
 
+
+import OAuth2SuccessPage from "../pages/auth/OAuth2SuccessPage";
+
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -220,6 +223,9 @@ function AppRoutes() {
               <Route path={ROUTES.PUBLIC_PACKS} element={<SearchPage />} />
 
               <Route path={ROUTES.PUBLIC_PACK_DETAILS} element={<PublicPackDetailsPage />} />
+
+              <Route path={ROUTES.OAUTH2_SUCCESS} element={<OAuth2SuccessPage />} />
+
       </Routes>
     </BrowserRouter>
   );

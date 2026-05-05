@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants/routes";
 import useAuth from "../../hooks/useAuth";
+import GoogleAuthButton from "../../components/auth/GoogleAuthButton";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -148,6 +149,11 @@ navigate(redirectPath, { replace: true });
             <button className="btn auth-submit" type="submit" disabled={loading}>
               {loading ? "Connexion..." : "Se connecter"}
             </button>
+                        <div className="auth-separator">
+              <span>ou</span>
+            </div>
+
+            <GoogleAuthButton label="Se connecter avec Google" />
           </form>
 
           <p className="auth-footer-text">

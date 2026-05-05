@@ -36,7 +36,7 @@ function QuoteRequestPage() {
   const isProvider = roles.includes("ROLE_PROVIDER");
   const isAdmin = roles.includes("ROLE_ADMIN");
 
-  const canSubmitQuoteRequest = !isAuthenticated || isClient;
+ const canSubmitQuoteRequest = isAuthenticated && isClient;
 
   const loadPack = async () => {
     setLoadingPack(true);
@@ -110,6 +110,9 @@ function QuoteRequestPage() {
       errors.eventDate = "La date de l’événement est obligatoire.";
     }
 
+    if (formData.eventDate && formData.eventDate <= getTodayDateInputValue()) {
+    errors.eventDate = "La date de l’événement doit être dans le futur.";
+    }
     if (!formData.eventCity.trim()) {
       errors.eventCity = "La ville de l’événement est obligatoire.";
     }
@@ -123,6 +126,14 @@ function QuoteRequestPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!isAuthenticated) {
+  setErrorMessage(
+    "Vous devez vous connecter ou créer un compte client pour envoyer une demande de devis."
+  );
+  return;
+}
+
+
 
     if (!canSubmitQuoteRequest) {
       setErrorMessage(
@@ -254,13 +265,25 @@ function QuoteRequestPage() {
         </div>
       )}
 
-      {!isAuthenticated && (
-        <div className="alert alert-info">
-          Vous pouvez envoyer une demande maintenant. Pour suivre son statut,
-          connectez-vous ou créez un compte client après l’envoi.
-        </div>
-      )}
+{!isAuthenticated && (
+  <div className="alert alert-info">
+    Pour envoyer une demande de devis, vous devez vous connecter ou créer un
+    compte client.
 
+    <div className="actions mt-1">
+      <Link className="link-btn" to={ROUTES.LOGIN || "/login"}>
+        Se connecter
+      </Link>
+
+      <Link
+        className="link-btn link-btn-secondary"
+        to={ROUTES.REGISTER || "/register"}
+      >
+        Créer un compte client
+      </Link>
+    </div>
+  </div>
+)}
       {successMessage && (
         <div className="alert alert-success">
           {successMessage}
@@ -318,6 +341,7 @@ function QuoteRequestPage() {
                   className="form-control"
                   placeholder="Ex: Sami Alaoui"
                   disabled={!canSubmitQuoteRequest || submitting}
+
                 />
               </FormRow>
 
@@ -341,20 +365,22 @@ function QuoteRequestPage() {
                 onChange={handleChange}
                 className="form-control"
                 placeholder="exemple@email.com"
-                disabled={!canSubmitQuoteRequest || submitting}
+                disabled={isClient || !canSubmitQuoteRequest || submitting}
               />
             </FormRow>
 
             <div className="card-grid card-grid-2">
               <FormRow label="Date de l’événement" error={validationErrors.eventDate}>
+
                 <input
-                  type="date"
-                  name="eventDate"
-                  value={formData.eventDate}
-                  onChange={handleChange}
-                  className="form-control"
-                  disabled={!canSubmitQuoteRequest || submitting}
-                />
+                        type="date"
+                        name="eventDate"
+                        value={formData.eventDate}
+                        onChange={handleChange}
+                        className="form-control"
+                        min={getTodayDateInputValue()}
+                        disabled={!canSubmitQuoteRequest || submitting}
+                      />
               </FormRow>
 
               <FormRow label="Ville de l’événement" error={validationErrors.eventCity}>
@@ -526,6 +552,9 @@ function getInitials(text) {
     .map((word) => word.charAt(0))
     .join("")
     .toUpperCase();
+}
+function getTodayDateInputValue() {
+  return new Date().toISOString().split("T")[0];
 }
 
 export default QuoteRequestPage;

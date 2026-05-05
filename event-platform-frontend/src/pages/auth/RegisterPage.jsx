@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants/routes";
 import axiosClient from "../../services/api/axiosClient";
 
+import GoogleAuthButton from "../../components/auth/GoogleAuthButton";
+
 function RegisterPage() {
   const navigate = useNavigate();
 
@@ -295,6 +297,11 @@ function RegisterPage() {
             Déjà un compte ?{" "}
             <Link to={ROUTES.LOGIN || "/login"}>Se connecter</Link>
           </p>
+          <div className="auth-separator">
+  <span>ou</span>
+</div>
+
+<GoogleAuthButton label="Créer un compte client avec Google" />
         </div>
       </section>
     </main>
